@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 
 const AdminPanel = () => {
   const [question, setQuestion] = useState('');
@@ -16,6 +17,7 @@ const AdminPanel = () => {
       setPolls([]);
     }
   }, []);
+
   // Handle changes to the poll question
   const handleQuestionChange = (e) => {
     setQuestion(e.target.value);
@@ -68,78 +70,94 @@ const AdminPanel = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-lg mt-10">
-      <h2 className="text-3xl font-semibold text-center mb-6">Create a New Poll</h2>
-      <input
-        type="text"
-        placeholder="Poll Question"
-        value={question}
-        onChange={handleQuestionChange}
-        className="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-      {options.map((option, index) => (
-        <div key={index} className="flex items-center mb-4">
-          <input
-            type="text"
-            placeholder={`Option ${index + 1}`}
-            value={option}
-            onChange={(e) => handleOptionChange(index, e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          {options.length > 1 && (
-            <button
-              type="button"
-              onClick={() => handleRemoveOption(index)}
-              className="ml-2 text-red-500 hover:text-red-700"
-            >
-              &times;
-            </button>
-          )}
-        </div>
-      ))}
-      <div className="flex items-center mb-4">
-        <button
-          type="button"
-          onClick={handleAddOption}
-          className="flex items-center text-blue-500 hover:text-blue-700"
-        >
-          <span className="mr-2">+</span>
-          Add Option
-        </button>
-      </div>
-      <div className="mb-4">
-        <label htmlFor="correctCount" className="block text-sm font-medium text-gray-700">
-          Number of Correct Options
-        </label>
-        <input
-          type="number"
-          id="correctCount"
-          value={correctCount}
-          onChange={handleCorrectCountChange}
-          min="1"
-          max={options.length}
-          className="w-full p-3 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-      <button
-        onClick={handleSubmit}
-        className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-white p-8">
+      <motion.div
+        className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-xl"
+        initial={{ opacity: 0, y: -30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, ease: 'easeOut' }}
       >
-        Create Poll
-      </button>
+        <h2 className="text-3xl font-semibold text-center text-gray-800 mb-6">Create a New Poll</h2>
+        
+        <input
+          type="text"
+          placeholder="Poll Question"
+          value={question}
+          onChange={handleQuestionChange}
+          className="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+
+        {options.map((option, index) => (
+          <div key={index} className="flex items-center mb-4">
+            <input
+              type="text"
+              placeholder={`Option ${index + 1}`}
+              value={option}
+              onChange={(e) => handleOptionChange(index, e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {options.length > 1 && (
+              <button
+                type="button"
+                onClick={() => handleRemoveOption(index)}
+                className="ml-2 text-red-500 hover:text-red-700"
+              >
+                &times;
+              </button>
+            )}
+          </div>
+        ))}
+
+        <div className="flex items-center mb-4">
+          <button
+            type="button"
+            onClick={handleAddOption}
+            className="flex items-center text-blue-500 hover:text-blue-700"
+          >
+            <span className="mr-2">+</span>
+            Add Option
+          </button>
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="correctCount" className="block text-sm font-medium text-gray-700">
+            Number of Correct Options
+          </label>
+          <input
+            type="number"
+            id="correctCount"
+            value={correctCount}
+            onChange={handleCorrectCountChange}
+            min="1"
+            max={options.length}
+            className="w-full p-3 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <button
+          onClick={handleSubmit}
+          className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          Create Poll
+        </button>
+      </motion.div>
 
       {/* Active Polls Section */}
-      <div className="mt-10">
-        <h3 className="text-2xl font-semibold mb-4">Active Polls</h3>
+      <motion.div
+        className="mt-10"
+        initial={{ opacity: 0, y: -30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }}
+      >
+        <h3 className="text-2xl font-semibold text-gray-800 mb-4">Active Polls</h3>
+
         {polls.length > 0 ? (
           polls.map((poll, index) => (
-            <div key={index} className="mb-6 p-4 border border-gray-300 rounded-lg">
-              <h4 className="text-lg font-semibold mb-2">{poll.question}</h4>
+            <div key={index} className="mb-6 p-4 border border-gray-300 rounded-lg shadow-lg">
+              <h4 className="text-lg font-semibold text-gray-800 mb-2">{poll.question}</h4>
               <ul className="list-disc pl-5">
                 {poll.options.map((option, i) => (
-                  <li key={i} className="mb-1">
-                    {option}
-                  </li>
+                  <li key={i} className="mb-1 text-gray-700">{option}</li>
                 ))}
               </ul>
               <p className="text-sm text-gray-600 mt-2">
@@ -150,7 +168,7 @@ const AdminPanel = () => {
         ) : (
           <p className="text-gray-500">No active polls available.</p>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };
