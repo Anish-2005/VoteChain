@@ -206,3 +206,28 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   <br>
   <em>Secure • Transparent • Decentralized</em>
 </div>
+
+## 🚀 Deployment
+
+### Vercel Deployment
+
+1. **Connect your repository to Vercel**
+2. **Set the Root Directory to `VoteChain` in project settings**
+3. **Configure build settings:**
+   - Build Command: `npm run build`
+   - Output Directory: `build`
+   - Install Command: `npm install`
+
+### Manual Deployment Fix
+If you're getting the "Could not find index.html" error:
+
+1. Ensure your Vercel project root directory is set to `VoteChain` (the inner folder)
+2. Verify that `public/index.html` exists in your project
+3. Check that your `package.json` has the correct build scripts
+
+### Environment Variables
+For production deployment, set these environment variables in Vercel:
+```bash
+NODE_ENV=production
+GENERATE_SOURCEMAP=false
+```
