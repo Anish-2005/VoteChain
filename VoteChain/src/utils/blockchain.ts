@@ -1,14 +1,8 @@
 import { ethers } from 'ethers';
+import contractData from '../contracts/Voting.json';
 
-// Contract ABI - simplified
-const abi = [
-  "function vote(uint _candidateId) public",
-  "function getCandidates() public view returns (tuple(uint id, string name, uint voteCount)[])",
-  "function voters(address) public view returns (bool)"
-];
-
-// Contract address - for local, will be set after deploy
-const contractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3'; // example, replace with actual
+const contractAddress = contractData.address;
+const abi = contractData.abi;
 
 let provider: ethers.BrowserProvider | null = null;
 let signer: ethers.Signer | null = null;
@@ -20,45 +14,57 @@ export const connectWallet = async () => {
     await provider.send("eth_requestAccounts", []);
     signer = await provider.getSigner();
     contract = new ethers.Contract(contractAddress, abi, signer);
+    console.log("Connected to contract at:", contractAddress);
   } else {
-    alert('Please install MetaMask');
+    throw new Error('Please install MetaMask or another Web3 wallet');
   }
 };
 
 export const getCandidates = async () => {
-  // Mock data for demonstration
-  return [
-    { id: 1, name: 'Candidate 1', voteCount: 10 },
-    { id: 2, name: 'Candidate 2', voteCount: 15 },
-  ];
-  // Uncomment below when contract is deployed
-  // if (contract) {
-  //   try {
-  //     const candidates = await contract.getCandidates();
-  //     return candidates.map((c: any) => ({ id: Number(c[0]), name: c[1], voteCount: Number(c[2]) }));
-  //   } catch (error) {
-  //     console.error('Contract call failed:', error);
-  //   }
-  // }
-  // return [];
+  if (!contract) {
+    throw new Error('Contract not connected. Please connect wallet first.');
+  }
+
+  try {
+    const candidates = await contract.getCandidates();
+    return candidates.map((c: any) => ({
+      id: Number(c.id),
+      name: c.name,
+      voteCount: Number(c.voteCount)
+    }));
+  } catch (error) {
+    console.error('Failed to get candidates:', error);
+    throw error;
+  }
 };
 
 export const vote = async (candidateId: number) => {
-  // Mock vote for demonstration
-  console.log('Voted for candidate', candidateId);
-  // Uncomment below when contract is deployed
-  // if (contract) {
-  //   const tx = await contract.vote(candidateId);
-  //   await tx.wait();
-  // }
+  if (!contract) {
+    throw new Error('Contract not connected. Please connect wallet first.');
+  }
+
+  try {
+    const tx = await contract.vote(candidateId);
+    console.log('Transaction sent:', tx.hash);
+    await tx.wait();
+    console.log('Vote confirmed');
+  } catch (error) {
+    console.error('Failed to vote:', error);
+    throw error;
+  }
 };
 
 export const hasVoted = async (address: string) => {
-  // Mock: assume not voted for demonstration
-  return false;
-  // Uncomment below when contract is deployed
-  // if (contract) {
-  //   return await contract.voters(address);
-  // }
-  // return false;
+  if (!contract) {
+    throw new Error('Contract not connected. Please connect wallet first.');
+  }
+
+  try {
+    return await contract.voters(address);
+  } catch (error) {
+    console.error('Failed to check voting status:', error);
+    throw error;
+  }
 };
+
+export const getContractAddress = () => contractAddress;

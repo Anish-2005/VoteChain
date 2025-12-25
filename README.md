@@ -1,16 +1,16 @@
 # 🗳️ VoteChain - Blockchain Voting Platform
 
-A modern, secure, and transparent voting application built on blockchain technology and deployed on Google Cloud Platform. VoteChain revolutionizes the voting process by ensuring immutability, transparency, and security through distributed ledger technology.
+A modern, secure, and transparent voting application built on blockchain technology. VoteChain revolutionizes the voting process by ensuring immutability, transparency, and security through distributed ledger technology.
 
 ## 🌟 Features
 
 - **🔒 Blockchain Security**: All votes are encrypted and stored on an immutable blockchain
-- **☁️ Google Cloud Infrastructure**: Lightning-fast performance with global scalability
 - **🎨 Modern UI/UX**: Beautiful, responsive design built with React and Tailwind CSS
 - **📊 Real-time Results**: Live vote counting and results visualization
-- **🔐 Secure Authentication**: Multiple layers of security for voter verification
+- **🔐 Secure Authentication**: Wallet-based authentication for voter verification
 - **📱 Mobile Responsive**: Optimized for all devices and screen sizes
 - **🌐 Transparent Process**: Complete audit trail for all voting activities
+- **⚡ Smart Contracts**: Solidity-based voting contracts on Ethereum
 
 ## 🛠️ Technology Stack
 
@@ -19,20 +19,21 @@ A modern, secure, and transparent voting application built on blockchain technol
 - **Tailwind CSS 3.4.10** - Utility-first styling
 - **Framer Motion 11.5.6** - Smooth animations and transitions
 - **React Router DOM 6.26.1** - Client-side routing
-- **Lucide React** - Beautiful icon library
-- **Recharts 2.12.7** - Data visualization
-- **Axios 1.7.7** - HTTP client for API calls
+- **Ethers.js 6.16.0** - Ethereum blockchain interaction
+- **Zustand 5.0.9** - State management
 
-### Infrastructure
-- **Google Cloud Platform** - Cloud hosting and services
-- **Blockchain Technology** - Immutable vote storage
-- **Progressive Web App (PWA)** - App-like experience
+### Blockchain
+- **Solidity 0.8.19** - Smart contract language
+- **Hardhat** - Ethereum development environment
+- **MetaMask** - Web3 wallet integration
+- **Ethereum Networks** - Local, Sepolia testnet, and mainnet support
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js (v16 or higher)
 - npm or yarn package manager
+- MetaMask browser extension
 - Git
 
 ### Installation
@@ -48,12 +49,34 @@ A modern, secure, and transparent voting application built on blockchain technol
    npm install
    ```
 
-3. **Start the development server**
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your RPC URLs and private keys
+   ```
+
+4. **Compile smart contracts**
+   ```bash
+   npm run compile
+   ```
+
+5. **Start local blockchain network**
+   ```bash
+   npm run node
+   ```
+   This starts a local Hardhat network on `http://127.0.0.1:8545`
+
+6. **Deploy contracts to local network** (in a new terminal)
+   ```bash
+   npm run deploy:local
+   ```
+
+7. **Start the development server**
    ```bash
    npm start
    ```
 
-4. **Open your browser**
+8. **Open your browser**
    Navigate to `http://localhost:3000` to see the application running.
 
 ### Build for Production
@@ -64,24 +87,91 @@ npm run build
 
 This creates an optimized production build in the `build/` folder.
 
+## ⛓️ Blockchain Deployment
+
+### Local Development Network
+
+1. **Start Hardhat local network:**
+   ```bash
+   npm run node
+   ```
+
+2. **Deploy contracts locally:**
+   ```bash
+   npm run deploy:local
+   ```
+
+3. **The contract address and ABI will be saved to `src/contracts/Voting.json`**
+
+### Testnet Deployment (Sepolia)
+
+1. **Set up your `.env` file with:**
+   ```bash
+   SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_PROJECT_ID
+   PRIVATE_KEY=your_private_key_without_0x_prefix
+   ETHERSCAN_API_KEY=your_etherscan_api_key
+   ```
+
+2. **Deploy to Sepolia testnet:**
+   ```bash
+   npm run deploy:sepolia
+   ```
+
+3. **Verify contract on Etherscan:**
+   ```bash
+   npm run verify
+   ```
+
+### Mainnet Deployment
+
+⚠️ **Use with extreme caution! Mainnet deployments are permanent and costly.**
+
+```bash
+npm run deploy:mainnet
+```
+
+### Using MetaMask
+
+1. **Install MetaMask** browser extension
+2. **Connect to the appropriate network:**
+   - Local: Add network `http://127.0.0.1:8545`
+   - Sepolia: Select "Sepolia Test Network"
+   - Mainnet: Select "Ethereum Main Network"
+3. **Fund your account** (for testnets, use faucets like https://sepoliafaucet.com)
+
 ## 📁 Project Structure
 
 ```
 VoteChain/
+├── contracts/
+│   └── Voting.sol          # Smart contract for voting logic
 ├── public/
 │   ├── index.html
 │   └── site.webmanifest
+├── scripts/
+│   └── deploy.js           # Contract deployment script
 ├── src/
-│   ├── AdminPanel.js       # Poll creation and management
-│   ├── App.js             # Main application component
-│   ├── Home.jsx           # Landing page
-│   ├── VotingInterface.js # Voting functionality
-│   ├── ThemeContext.js    # Theme management
-│   ├── localStorage.js    # Local storage utilities
-│   └── index.js          # Application entry point
+│   ├── components/
+│   │   ├── AdminPanel.tsx     # Poll creation and management
+│   │   ├── VotingInterface.tsx # Voting functionality
+│   │   └── Results.tsx        # Results visualization
+│   ├── contracts/
+│   │   └── Voting.json        # Deployed contract ABI and address
+│   ├── store/
+│   │   └── useVotingStore.ts  # Zustand state management
+│   ├── utils/
+│   │   └── blockchain.ts      # Web3 integration utilities
+│   ├── App.tsx               # Main application component
+│   ├── Home.tsx              # Landing page
+│   ├── ThemeContext.tsx      # Theme management
+│   ├── index.tsx            # Application entry point
+│   └── types/
+│       └── global.d.ts       # TypeScript declarations
+├── hardhat.config.js        # Hardhat configuration
 ├── package.json
 ├── tailwind.config.js
 ├── vercel.json
+├── .env.example
 ├── .gitignore
 └── README.md
 ```
@@ -142,29 +232,39 @@ VoteChain leverages Google Cloud Platform for:
 
 ## 🚧 Development Status
 
-VoteChain is currently **under active development**. This is a work-in-progress project with the following roadmap:
+VoteChain is a **fully functional blockchain voting platform** with complete smart contract integration.
 
 ### ✅ Completed
-- [x] Frontend UI/UX design
-- [x] Basic routing and navigation
-- [x] Responsive layout with Tailwind CSS
-- [x] Animation system with Framer Motion
-- [x] Project structure and build setup
+- [x] Frontend UI/UX design with React and Tailwind CSS
+- [x] Blockchain integration with Ethereum smart contracts
+- [x] Smart contract development in Solidity
+- [x] Web3 wallet integration (MetaMask)
+- [x] Real-time voting and results display
+- [x] Hardhat development environment setup
+- [x] Multi-network deployment support (local, testnet, mainnet)
+- [x] Responsive layout and animations
+- [x] State management with Zustand
+- [x] Error handling and loading states
 
-### 🔄 In Progress
-- [ ] Blockchain integration
-- [ ] Google Cloud deployment pipeline
-- [ ] User authentication system
-- [ ] Voting mechanism implementation
-- [ ] Admin dashboard functionality
+### 🔄 Current Features
+- [x] Local blockchain network deployment
+- [x] Testnet deployment capability
+- [x] Live voting with transaction confirmation
+- [x] Immutable vote storage on blockchain
+- [x] Real-time results from blockchain state
+- [x] Wallet connection and authentication
+- [x] One-vote-per-address restriction
+- [x] Transparent and auditable voting process
 
-### 📋 Planned Features
+### 📋 Future Enhancements
+- [ ] Admin panel for dynamic candidate management
+- [ ] Voting period controls (start/end times)
+- [ ] Advanced analytics and reporting
 - [ ] Multi-language support
-- [ ] Advanced analytics dashboard
 - [ ] Mobile app development
 - [ ] Integration with external identity providers
-- [ ] Advanced reporting and audit tools
-- [ ] API for third-party integrations
+- [ ] Batch voting for organizations
+- [ ] Voting delegation features
 
 ## 🤝 Contributing
 
