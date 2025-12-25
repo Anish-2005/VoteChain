@@ -1,4 +1,4 @@
-const { ethers } = require("hardhat");
+import { ethers } from "hardhat";
 
 async function main() {
   const Voting = await ethers.getContractFactory("Voting");
@@ -6,7 +6,7 @@ async function main() {
 
   await voting.deployed();
 
-  console.log("Voting deployed to:", voting.address);
+  console.log("Voting deployed to:", voting.target);
 }
 
 main().catch((error) => {
