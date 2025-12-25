@@ -2,19 +2,35 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useVotingStore } from './store/useVotingStore';
-import { getCandidates } from './utils/blockchain';
+import { getCandidates, addCandidateAdmin, getVotingStatus, startVotingAdmin, endVotingAdmin, connectWallet, getOwner } from './utils/blockchain';
+import Auth from './components/Auth';
 
 const MotionDiv = motion.div as any;
 
 const AdminPanel = () => {
   const { candidates, setCandidates } = useVotingStore();
   const [loading, setLoading] = useState(true);
+  const [newCandidate, setNewCandidate] = useState('');
+  const [status, setStatus] = useState<any>(null);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     const loadCandidates = async () => {
-      const cands = await getCandidates();
-      setCandidates(cands);
-      setLoading(false);
+      try {
+        await connectWallet();
+        const cands = await getCandidates();
+        setCandidates(cands);
+        const s = await getVotingStatus();
+        setStatus(s);
+        const owner = await getOwner();
+        const accounts = (window as any).ethereum ? (await (new (window as any).ethers.BrowserProvider((window as any).ethereum)).send('eth_requestAccounts', [])) : [];
+        const current = (window as any).ethereum && (window as any).ethereum.selectedAddress ? (window as any).ethereum.selectedAddress : null;
+        setIsOwner(current && owner && current.toLowerCase() === owner.toLowerCase());
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     };
     loadCandidates();
   }, [setCandidates]);
@@ -53,6 +69,26 @@ const AdminPanel = () => {
 
         <div>
           <h3 className="text-xl font-semibold mb-4">Vote Distribution</h3>
+          <div className="mb-4">
+            <strong>Voting Active:</strong> {status ? (status.active ? 'Yes' : 'No') : '—'}
+            <div className="mt-2">
+              {isOwner && (
+                <div className="flex gap-2">
+                  <button onClick={async () => { await startVotingAdmin(); const s = await getVotingStatus(); setStatus(s); }} className="px-3 py-2 bg-green-600 text-white rounded">Start Voting</button>
+                  <button onClick={async () => { await endVotingAdmin(); const s = await getVotingStatus(); setStatus(s); }} className="px-3 py-2 bg-red-600 text-white rounded">End Voting</button>
+                </div>
+              )}
+            </div>
+          </div>
+          {isOwner && (
+            <div className="mb-6">
+              <h4 className="font-semibold mb-2">Add Candidate</h4>
+              <div className="flex gap-2">
+                <input value={newCandidate} onChange={(e) => setNewCandidate(e.target.value)} className="px-3 py-2 border rounded flex-1" placeholder="Candidate name" />
+                <button onClick={async () => { if (newCandidate.trim()) { await addCandidateAdmin(newCandidate.trim()); const cands = await getCandidates(); setCandidates(cands); setNewCandidate(''); } }} className="px-4 py-2 bg-blue-600 text-white rounded">Add</button>
+              </div>
+            </div>
+          )}
           <ResponsiveContainer width="100%" height={400}>
             <BarChart data={candidates}>
               <CartesianGrid strokeDasharray="3 3" />

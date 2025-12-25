@@ -86,3 +86,47 @@ export const getVotingStatus = async () => {
 };
 
 export const getContractAddress = () => contractAddress;
+
+// Admin actions
+export const addCandidateAdmin = async (name: string) => {
+  if (!contract) throw new Error('Contract not connected.');
+  try {
+    const tx = await contract.addCandidate(name);
+    await tx.wait();
+  } catch (err) {
+    console.error('addCandidate failed', err);
+    throw err;
+  }
+};
+
+export const startVotingAdmin = async () => {
+  if (!contract) throw new Error('Contract not connected.');
+  try {
+    const tx = await contract.startVoting();
+    await tx.wait();
+  } catch (err) {
+    console.error('startVoting failed', err);
+    throw err;
+  }
+};
+
+export const endVotingAdmin = async () => {
+  if (!contract) throw new Error('Contract not connected.');
+  try {
+    const tx = await contract.endVoting();
+    await tx.wait();
+  } catch (err) {
+    console.error('endVoting failed', err);
+    throw err;
+  }
+};
+
+export const getOwner = async () => {
+  if (!contract) throw new Error('Contract not connected.');
+  try {
+    return await contract.owner();
+  } catch (err) {
+    console.error('getOwner failed', err);
+    throw err;
+  }
+};
