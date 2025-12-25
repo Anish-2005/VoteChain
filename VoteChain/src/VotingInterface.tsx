@@ -1,34 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useVotingStore } from './store/useVotingStore';
+import { connectWallet, getCandidates, vote, hasVoted } from './utils/blockchain';
 
 const VotingInterface = () => {
-  const [polls, setPolls] = useState([]);
-  const [selectedPollIndex, setSelectedPollIndex] = useState(null);
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [completedPolls, setCompletedPolls] = useState([]);
-  const navigate = useNavigate();
+  const { candidates, hasVoted: storeHasVoted, setCandidates, setHasVoted } = useVotingStore();
+  const [selectedCandidate, setSelectedCandidate] = useState<number | null>(null);
+  const [walletConnected, setWalletConnected] = useState(false);
 
-  // Load polls from localStorage
   useEffect(() => {
-    const savedPolls = JSON.parse(localStorage.getItem('polls') || '[]');
-    setPolls(savedPolls);
-  }, []);
-
-  // Redirect to /Home if all polls are completed
-  useEffect(() => {
-    if (completedPolls.length === polls.length && polls.length > 0) {
-      navigate('/');
+    const loadCandidates = async () => {
+      const cands = await getCandidates();
+      setCandidates(cands);
+    };
+    if (walletConnected) {
+      loadCandidates();
     }
-  }, [completedPolls, polls, navigate]);
+  }, [walletConnected, setCandidates]);
 
-  const handleVote = () => {
-    if (selectedOption !== null && selectedPollIndex !== null) {
-      setCompletedPolls([...completedPolls, selectedPollIndex]);
-      setSelectedPollIndex(null);
-      setSelectedOption(null);
-    } else {
-      alert('Please select an option to vote.');
+  const handleConnectWallet = async () => {
+    await connectWallet();
+    setWalletConnected(true);
+    const address = await (window as any).ethereum.selectedAddress;
+    const voted = await hasVoted(address);
+    setHasVoted(voted);
+  };
+
+  const handleVote = async () => {
+    if (selectedCandidate !== null && !storeHasVoted) {
+      await vote(selectedCandidate);
+      setHasVoted(true);
+      // Reload candidates to update vote counts
+      const cands = await getCandidates();
+      setCandidates(cands);
     }
   };
 
@@ -40,60 +44,66 @@ const VotingInterface = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, ease: "easeOut" }}
       >
-        Active Polls
+        Blockchain Voting
       </motion.h2>
 
-      {polls.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {polls.map((poll, index) => (
-            <motion.div
-              key={index}
-              className={`p-6 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out ${
-                completedPolls.includes(index)
-                  ? 'bg-green-100 border-green-500'
-                  : 'bg-white border-gray-300'
-              }`}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <h3 className="text-xl font-semibold mb-4">{poll.question}</h3>
-              {completedPolls.includes(index) ? (
-                <p className="text-green-600 font-medium">✔️ Completed</p>
-              ) : (
-                <>
-                  {poll.options.map((option, optIndex) => (
-                    <div key={optIndex} className="flex items-center mb-2">
-                      <input
-                        type="radio"
-                        id={`poll-${index}-option-${optIndex}`}
-                        name={`poll-${index}`}
-                        value={option}
-                        onChange={() => {
-                          setSelectedPollIndex(index);
-                          setSelectedOption(option);
-                        }}
-                        className="mr-2"
-                      />
-                      <label htmlFor={`poll-${index}-option-${optIndex}`} className="text-gray-700">
-                        {option}
-                      </label>
-                    </div>
-                  ))}
-                  <button
-                    onClick={handleVote}
-                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                    disabled={selectedPollIndex !== index}
-                  >
-                    Submit Vote
-                  </button>
-                </>
-              )}
-            </motion.div>
-          ))}
-        </div>
+      {!walletConnected ? (
+        <motion.button
+          onClick={handleConnectWallet}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          Connect Wallet
+        </motion.button>
       ) : (
-        <p className="text-gray-500">No polls available.</p>
+        <>
+          {storeHasVoted ? (
+            <p className="text-green-600 font-medium">You have already voted.</p>
+          ) : (
+            <p className="text-gray-700 mb-4">Select a candidate to vote.</p>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {candidates.map((candidate) => (
+              <motion.div
+                key={candidate.id}
+                className="p-6 bg-white rounded-lg shadow-lg"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <h3 className="text-xl font-semibold mb-2">{candidate.name}</h3>
+                <p className="text-gray-600">Votes: {candidate.voteCount}</p>
+                {!storeHasVoted && (
+                  <button
+                    onClick={() => setSelectedCandidate(candidate.id)}
+                    className={`mt-4 px-4 py-2 rounded-lg ${
+                      selectedCandidate === candidate.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Select
+                  </button>
+                )}
+              </motion.div>
+            ))}
+          </div>
+
+          {!storeHasVoted && selectedCandidate && (
+            <motion.button
+              onClick={handleVote}
+              className="mt-6 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              Submit Vote
+            </motion.button>
+          )}
+        </>
       )}
     </div>
   );

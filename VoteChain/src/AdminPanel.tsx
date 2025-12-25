@@ -1,173 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useVotingStore } from './store/useVotingStore';
+import { getCandidates } from './utils/blockchain';
 
 const AdminPanel = () => {
-  const [question, setQuestion] = useState('');
-  const [options, setOptions] = useState(['']);
-  const [correctCount, setCorrectCount] = useState(1);
-  const [polls, setPolls] = useState([]);
+  const { candidates, setCandidates } = useVotingStore();
+  const [loading, setLoading] = useState(true);
 
-  // Load polls from localStorage on component mount
   useEffect(() => {
-    try {
-      const savedPolls = JSON.parse(localStorage.getItem('polls'));
-      setPolls(Array.isArray(savedPolls) ? savedPolls : []);
-    } catch (error) {
-      console.error('Error parsing polls from localStorage:', error);
-      setPolls([]);
-    }
-  }, []);
+    const loadCandidates = async () => {
+      const cands = await getCandidates();
+      setCandidates(cands);
+      setLoading(false);
+    };
+    loadCandidates();
+  }, [setCandidates]);
 
-  // Handle changes to the poll question
-  const handleQuestionChange = (e) => {
-    setQuestion(e.target.value);
-  };
-
-  // Handle changes to the options
-  const handleOptionChange = (index, value) => {
-    const newOptions = [...options];
-    newOptions[index] = value;
-    setOptions(newOptions);
-  };
-
-  // Add a new option
-  const handleAddOption = () => {
-    setOptions([...options, '']);
-  };
-
-  // Remove an option
-  const handleRemoveOption = (index) => {
-    const newOptions = options.filter((_, i) => i !== index);
-    setOptions(newOptions);
-  };
-
-  // Handle changes to the number of correct answers
-  const handleCorrectCountChange = (e) => {
-    const value = Math.min(e.target.value, options.length);
-    setCorrectCount(value);
-  };
-
-  // Submit the poll
-  const handleSubmit = () => {
-    if (options.every((option) => option.trim() !== '') && correctCount <= options.length) {
-      const newPoll = { question, options, correctCount };
-      try {
-        const updatedPolls = [...polls, newPoll];
-        setPolls(updatedPolls);
-        localStorage.setItem('polls', JSON.stringify(updatedPolls));
-
-        // Reset form
-        setQuestion('');
-        setOptions(['']);
-        setCorrectCount(1);
-      } catch (error) {
-        console.error('Error accessing localStorage:', error);
-        alert('An error occurred while saving the poll.');
-      }
-    } else {
-      alert('Please fill in all options and ensure correct count is less than or equal to total options.');
-    }
-  };
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-white p-8">
       <motion.div
-        className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-xl"
+        className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-xl"
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, ease: 'easeOut' }}
       >
-        <h2 className="text-3xl font-semibold text-center text-gray-800 mb-6">Create a New Poll</h2>
-        
-        <input
-          type="text"
-          placeholder="Poll Question"
-          value={question}
-          onChange={handleQuestionChange}
-          className="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <h2 className="text-3xl font-semibold text-center text-gray-800 mb-6">Voting Results</h2>
 
-        {options.map((option, index) => (
-          <div key={index} className="flex items-center mb-4">
-            <input
-              type="text"
-              placeholder={`Option ${index + 1}`}
-              value={option}
-              onChange={(e) => handleOptionChange(index, e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {options.length > 1 && (
-              <button
-                type="button"
-                onClick={() => handleRemoveOption(index)}
-                className="ml-2 text-red-500 hover:text-red-700"
+        <div className="mb-8">
+          <h3 className="text-xl font-semibold mb-4">Candidates</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {candidates.map((candidate) => (
+              <motion.div
+                key={candidate.id}
+                className="p-4 bg-gray-50 rounded-lg"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
               >
-                &times;
-              </button>
-            )}
+                <h4 className="font-semibold">{candidate.name}</h4>
+                <p>Votes: {candidate.voteCount}</p>
+              </motion.div>
+            ))}
           </div>
-        ))}
-
-        <div className="flex items-center mb-4">
-          <button
-            type="button"
-            onClick={handleAddOption}
-            className="flex items-center text-blue-500 hover:text-blue-700"
-          >
-            <span className="mr-2">+</span>
-            Add Option
-          </button>
         </div>
 
-        <div className="mb-4">
-          <label htmlFor="correctCount" className="block text-sm font-medium text-gray-700">
-            Number of Correct Options
-          </label>
-          <input
-            type="number"
-            id="correctCount"
-            value={correctCount}
-            onChange={handleCorrectCountChange}
-            min="1"
-            max={options.length}
-            className="w-full p-3 mt-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+        <div>
+          <h3 className="text-xl font-semibold mb-4">Vote Distribution</h3>
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={candidates}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="voteCount" fill="#8884d8" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-
-        <button
-          onClick={handleSubmit}
-          className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          Create Poll
-        </button>
-      </motion.div>
-
-      {/* Active Polls Section */}
-      <motion.div
-        className="mt-10"
-        initial={{ opacity: 0, y: -30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }}
-      >
-        <h3 className="text-2xl font-semibold text-gray-800 mb-4">Active Polls</h3>
-
-        {polls.length > 0 ? (
-          polls.map((poll, index) => (
-            <div key={index} className="mb-6 p-4 border border-gray-300 rounded-lg shadow-lg">
-              <h4 className="text-lg font-semibold text-gray-800 mb-2">{poll.question}</h4>
-              <ul className="list-disc pl-5">
-                {poll.options.map((option, i) => (
-                  <li key={i} className="mb-1 text-gray-700">{option}</li>
-                ))}
-              </ul>
-              <p className="text-sm text-gray-600 mt-2">
-                Correct Options Allowed: {poll.correctCount}
-              </p>
-            </div>
-          ))
-        ) : (
-          <p className="text-gray-500">No active polls available.</p>
-        )}
       </motion.div>
     </div>
   );

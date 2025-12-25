@@ -1,24 +1,17 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import AdminPanel from './AdminPanel';
 import VotingInterface from './VotingInterface';
-import Home from './Home.jsx';
+import Home from './Home';
+
 const App = () => {
-
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [polls, setPolls] = useState([]);
-
   return (
-    
     <Router>
-      
-
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/admin" element={<AdminPanel setPolls={setPolls} />} />
-          <Route path="/vote" element={<VotingInterface polls={polls} />} />
-        </Routes>
-    
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/vote" element={<VotingInterface />} />
+      </Routes>
     </Router>
   );
 };
