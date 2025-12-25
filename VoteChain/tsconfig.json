@@ -9,7 +9,7 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
-    "types": [],
+    "types": ["react", "react-dom"],
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
