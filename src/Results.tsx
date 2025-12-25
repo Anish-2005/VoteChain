@@ -60,8 +60,20 @@ const Results = () => {
 
         setPollResults(results);
       } catch (err: any) {
-        setError(err.message || 'Failed to load voting results');
-        console.error(err);
+        console.error('Error loading results:', err);
+        let errorMessage = 'Failed to load results. ';
+
+        if (err.message?.includes('Chain ID: 1337')) {
+          errorMessage += 'Please connect MetaMask to the local Hardhat network (localhost:8545, Chain ID: 1337).';
+        } else if (err.message?.includes('Please install MetaMask')) {
+          errorMessage += 'Please install MetaMask browser extension.';
+        } else if (err.message?.includes('decode result data')) {
+          errorMessage += 'Blockchain connection issue. Please ensure Hardhat node is running and MetaMask is connected to localhost:8545.';
+        } else {
+          errorMessage += err.message || 'Unknown error occurred.';
+        }
+
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }

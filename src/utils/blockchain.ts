@@ -11,12 +11,48 @@ let contract: ethers.Contract | null = null;
 export const connectWallet = async () => {
   if (window.ethereum) {
     provider = new ethers.BrowserProvider(window.ethereum);
+
+    // Check if we're on the correct network
+    const network = await provider.getNetwork();
+    console.log("Connected to network:", network.name, "Chain ID:", network.chainId);
+
+    if (network.chainId !== 1337n) {
+      throw new Error(`Please connect to the local Hardhat network (Chain ID: 1337). Current network: ${network.name} (Chain ID: ${network.chainId})`);
+    }
+
     await provider.send("eth_requestAccounts", []);
     signer = await provider.getSigner();
     contract = new ethers.Contract(contractAddress, abi, signer);
     console.log("Connected to contract at:", contractAddress);
   } else {
     throw new Error('Please install MetaMask or another Web3 wallet');
+  }
+};
+
+export const addLocalNetwork = async () => {
+  if (!window.ethereum) {
+    throw new Error('MetaMask not detected');
+  }
+
+  try {
+    await window.ethereum.request({
+      method: 'wallet_addEthereumChain',
+      params: [{
+        chainId: '0x539', // 1337 in hex
+        chainName: 'Hardhat Local Network',
+        nativeCurrency: {
+          name: 'ETH',
+          symbol: 'ETH',
+          decimals: 18
+        },
+        rpcUrls: ['http://127.0.0.1:8545'],
+        blockExplorerUrls: []
+      }]
+    });
+    console.log('Local network added to MetaMask');
+  } catch (error) {
+    console.error('Failed to add local network:', error);
+    throw error;
   }
 };
 

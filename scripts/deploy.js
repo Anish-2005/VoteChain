@@ -1,8 +1,11 @@
 const { ethers } = require("ethers");
-const hre = require("hardhat");
 
 async function main() {
-  console.log("Deploying Voting contract using Hardhat...");
+  console.log("Deploying Voting contract using ethers.js...");
+
+  // Connect to Hardhat local network
+  const provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+  const wallet = new ethers.Wallet("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", provider);
 
   // Read compiled artifact
   const fs = require("fs");
@@ -15,13 +18,10 @@ async function main() {
 
   const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
 
-  // Get signer from Hardhat
-  const [deployer] = await hre.ethers.getSigners();
-
-  // Deploy using ethers directly
-  const VotingFactory = new ethers.ContractFactory(artifact.abi, artifact.bytecode, deployer);
+  // Deploy contract
+  const VotingFactory = new ethers.ContractFactory(artifact.abi, artifact.bytecode, wallet);
+  console.log("Deploying contract...");
   const voting = await VotingFactory.deploy();
-
   await voting.waitForDeployment();
 
   const address = await voting.getAddress();
