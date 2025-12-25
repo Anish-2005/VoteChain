@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { loginWithGoogle, onAuthChange, setUserRole, getUserRole } from './firebase';
 import { User } from 'firebase/auth';
+import { User as UserIcon } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (user: User, role: 'user' | 'admin') => void;
@@ -68,7 +69,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <div className="text-2xl mb-2">👤</div>
+              <div className="mb-2">
+                <UserIcon className="w-8 h-8 mx-auto" />
+              </div>
               <div className="font-medium">Voter</div>
               <div className="text-sm text-gray-500">Cast your vote</div>
             </button>

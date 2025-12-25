@@ -4,6 +4,7 @@ import { useVotingStore } from './store/useVotingStore';
 import { connectWallet, getCandidates, vote, hasVoted } from './utils/blockchain';
 import { getActivePoll, recordVote, getUserVotes, Poll } from './firebase';
 import { getCurrentUser } from './firebase';
+import { Users, Calendar } from 'lucide-react';
 
 const MotionH2 = motion.h2 as any;
 const MotionButton = motion.button as any;
@@ -133,8 +134,14 @@ const VotingInterface = () => {
           </MotionH2>
           <p className="text-gray-600 mb-4">{activePoll.description}</p>
           <div className="flex items-center gap-4 text-sm text-gray-500">
-            <span>🗳️ {activePoll.candidates.length} candidates</span>
-            <span>📅 Ends: {activePoll.endDate.toDate().toLocaleDateString()}</span>
+            <span className="flex items-center gap-1">
+              <Users className="w-4 h-4" />
+              {activePoll.candidates.length} candidates
+            </span>
+            <span className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              Ends: {activePoll.endDate.toDate().toLocaleDateString()}
+            </span>
           </div>
         </div>
 

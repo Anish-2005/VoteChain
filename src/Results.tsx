@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useVotingStore } from './store/useVotingStore';
 import { getCandidates, connectWallet } from './utils/blockchain';
 import { getPolls, getPollVotes, Poll } from './firebase';
+import { BarChart3, Users, Calendar } from 'lucide-react';
 
 interface PollResult {
   poll: Poll;
@@ -147,9 +148,18 @@ const Results = () => {
                   <h3 className="text-2xl font-bold text-gray-900 mb-2">{result.poll.title}</h3>
                   <p className="text-gray-600 mb-4">{result.poll.description}</p>
                   <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span>📊 {result.totalVotes} total votes</span>
-                    <span>🗳️ {result.poll.candidates.length} candidates</span>
-                    <span>📅 Ended: {result.poll.endDate.toDate().toLocaleDateString()}</span>
+                    <span className="flex items-center gap-1">
+                      <BarChart3 className="w-4 h-4" />
+                      {result.totalVotes} total votes
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Users className="w-4 h-4" />
+                      {result.poll.candidates.length} candidates
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      Ended: {result.poll.endDate.toDate().toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
 
