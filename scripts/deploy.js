@@ -4,11 +4,7 @@ const hre = require("hardhat");
 async function main() {
   console.log("Deploying Voting contract using Hardhat...");
 
-  // Get the default signer
-  const [deployer] = await hre.ethers.getSigners();
-  console.log("Deploying with account:", deployer.address);
-
-  // Read the compiled artifact
+  // Read compiled artifact
   const fs = require("fs");
   const path = require("path");
   const artifactPath = path.join(__dirname, "../artifacts/contracts/Voting.sol/Voting.json");
@@ -18,6 +14,9 @@ async function main() {
   }
 
   const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
+
+  // Get signer from Hardhat
+  const [deployer] = await hre.ethers.getSigners();
 
   // Deploy using ethers directly
   const VotingFactory = new ethers.ContractFactory(artifact.abi, artifact.bytecode, deployer);
@@ -47,12 +46,10 @@ async function main() {
   console.log("Contract address and ABI saved to src/contracts/Voting.json");
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+main().catch((error) => {
+  console.error("Deployment failed:", error.message);
+  process.exit(1);
+});
 
 main().catch((error) => {
   console.error(error);

@@ -59,7 +59,7 @@
     ]
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-ethers": "^4.0.3",
+    "@nomicfoundation/hardhat-ethers": "^3.1.0",
     "@nomicfoundation/hardhat-toolbox": "^6.1.0",
     "@types/node": "^25.0.3",
     "@types/react": "^19.2.7",
