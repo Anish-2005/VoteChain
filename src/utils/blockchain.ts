@@ -67,4 +67,22 @@ export const hasVoted = async (address: string) => {
   }
 };
 
+export const getVotingStatus = async () => {
+  if (!contract) {
+    throw new Error('Contract not connected. Please connect wallet first.');
+  }
+
+  try {
+    const status = await contract.getVotingStatus();
+    return {
+      active: status[0],
+      totalVotes: Number(status[1]),
+      candidateCount: Number(status[2])
+    };
+  } catch (error) {
+    console.error('Failed to get voting status:', error);
+    throw error;
+  }
+};
+
 export const getContractAddress = () => contractAddress;

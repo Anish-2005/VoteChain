@@ -309,49 +309,40 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
   <em>Secure • Transparent • Decentralized</em>
 </div>
 
-## 🚀 Deployment
+## 🚀 Deployment Options
 
-### Repository Structure
-This project should be cloned as `VoteChain` (with capital letters) to maintain consistency:
+### Local Development Network
 ```bash
-git clone https://github.com/your-username/VoteChain.git
-cd VoteChain
+# Start local Hardhat network
+npm run node
+
+# In another terminal, deploy contracts
+npm run deploy:local
+
+# Start frontend
+npm start
 ```
 
-### Vercel Deployment
+### Testnet Deployment (Sepolia)
+```bash
+# Set up your .env file with Sepolia RPC URL and private key
+# Then deploy to testnet
+npm run deploy:sepolia
 
-1. **Connect your repository to Vercel**
-   - Repository name: `VoteChain`
-   - Framework Preset: `Create React App`
+# Verify contract on Etherscan (optional)
+npm run verify
+```
 
-2. **Build Configuration:**
-   ```json
-   {
-     "buildCommand": "npm run build",
-     "outputDirectory": "build",
-     "installCommand": "npm install"
-   }
-   ```
+### Production Deployment (Mainnet)
+```bash
+# ⚠️  Use with extreme caution - costs real ETH
+npm run deploy:mainnet
+```
 
-3. **Environment Variables (Optional):**
-   ```bash
-   NODE_ENV=production
-   GENERATE_SOURCEMAP=false
-   ```
+### Frontend Deployment
+The React app can be deployed to Vercel, Netlify, or any static hosting service:
 
-### Manual Deployment Fix
-If you're getting build errors:
-
-1. Ensure your repository is named `VoteChain` (capital V and C)
-2. Verify that `public/index.html` exists in your project root
-3. Check that your `package.json` has the correct build scripts
-4. Make sure `vercel.json` is in the project root
-
-### GitHub Repository Setup
-To avoid duplicate repositories:
-1. Use consistent naming: `VoteChain` (not `votechain`)
-2. If you have both, delete the incorrect one and keep `VoteChain`
-3. Update your local remote URL if needed:
-   ```bash
-   git remote set-url origin https://github.com/your-username/VoteChain.git
-   ```
+```bash
+npm run build
+# Deploy the 'build' folder to your hosting service
+```
