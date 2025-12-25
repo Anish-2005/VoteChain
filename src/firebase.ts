@@ -30,6 +30,23 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const db = getFirestore(app);
 
+// Define types for Firestore data
+export interface PollData {
+  title: string;
+  description: string;
+  candidates: string[];
+  startDate: Timestamp;
+  endDate: Timestamp;
+  status: 'draft' | 'active' | 'ended';
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  createdBy: string;
+}
+
+export interface Poll extends PollData {
+  id: string;
+}
+
 export const loginWithGoogle = async () => {
   return signInWithPopup(auth, provider);
 };
@@ -66,18 +83,18 @@ export const createPoll = async (pollData: {
   return pollRef.id;
 };
 
-export const getPolls = async () => {
+export const getPolls = async (): Promise<Poll[]> => {
   const pollsRef = collection(db, 'polls');
   const q = query(pollsRef, orderBy('createdAt', 'desc'));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Poll));
 };
 
-export const getActivePoll = async () => {
+export const getActivePoll = async (): Promise<Poll | null> => {
   const pollsRef = collection(db, 'polls');
   const q = query(pollsRef, where('status', '==', 'active'));
   const snapshot = await getDocs(q);
-  return snapshot.docs.length > 0 ? { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } : null;
+  return snapshot.docs.length > 0 ? { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Poll : null;
 };
 
 export const updatePollStatus = async (pollId: string, status: 'draft' | 'active' | 'ended') => {

@@ -1,21 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useVotingStore } from './store/useVotingStore';
 import { getCandidates, addCandidateAdmin, getVotingStatus, startVotingAdmin, endVotingAdmin, connectWallet, getOwner } from './utils/blockchain';
-import { createPoll, getPolls, updatePollStatus, getPollVotes } from './firebase';
-
-interface Poll {
-  id: string;
-  title: string;
-  description: string;
-  candidates: string[];
-  startDate: Date;
-  endDate: Date;
-  status: 'draft' | 'active' | 'ended';
-  createdAt: any;
-  updatedAt: any;
-}
+import { createPoll, getPolls, updatePollStatus, getPollVotes, Poll } from './firebase';
 
 const MotionDiv = motion.div as any;
 
@@ -46,7 +34,6 @@ const AdminPanel = () => {
         const s = await getVotingStatus();
         setStatus(s);
         const owner = await getOwner();
-        const accounts = (window as any).ethereum ? (await (new (window as any).ethers.BrowserProvider((window as any).ethereum)).send('eth_requestAccounts', [])) : [];
         const current = (window as any).ethereum && (window as any).ethereum.selectedAddress ? (window as any).ethereum.selectedAddress : null;
         setIsOwner(current && owner && current.toLowerCase() === owner.toLowerCase());
 
@@ -66,7 +53,7 @@ const AdminPanel = () => {
     if (!pollForm.title.trim() || !pollForm.candidates.filter(c => c.trim()).length) return;
 
     try {
-      const pollId = await createPoll({
+      await createPoll({
         title: pollForm.title,
         description: pollForm.description,
         candidates: pollForm.candidates.filter(c => c.trim()),
