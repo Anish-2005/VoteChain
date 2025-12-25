@@ -2,6 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, query, where, orderBy, Timestamp } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY || '',
@@ -27,6 +28,7 @@ try {
 
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
+const db = getFirestore(app);
 
 export const loginWithGoogle = async () => {
   return signInWithPopup(auth, provider);
@@ -44,6 +46,87 @@ export const getCurrentUser = () => {
   return auth.currentUser;
 };
 
-export { analytics };
+// Firestore functions
+export const createPoll = async (pollData: {
+  title: string;
+  description: string;
+  candidates: string[];
+  startDate: Date;
+  endDate: Date;
+  createdBy: string;
+}) => {
+  const pollRef = doc(collection(db, 'polls'));
+  await setDoc(pollRef, {
+    ...pollData,
+    id: pollRef.id,
+    status: 'draft',
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now()
+  });
+  return pollRef.id;
+};
+
+export const getPolls = async () => {
+  const pollsRef = collection(db, 'polls');
+  const q = query(pollsRef, orderBy('createdAt', 'desc'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+export const getActivePoll = async () => {
+  const pollsRef = collection(db, 'polls');
+  const q = query(pollsRef, where('status', '==', 'active'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.length > 0 ? { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } : null;
+};
+
+export const updatePollStatus = async (pollId: string, status: 'draft' | 'active' | 'ended') => {
+  const pollRef = doc(db, 'polls', pollId);
+  await updateDoc(pollRef, {
+    status,
+    updatedAt: Timestamp.now()
+  });
+};
+
+export const recordVote = async (pollId: string, userId: string, candidateId: number, walletAddress: string) => {
+  const voteRef = doc(collection(db, 'votes'));
+  await setDoc(voteRef, {
+    pollId,
+    userId,
+    candidateId,
+    walletAddress,
+    timestamp: Timestamp.now()
+  });
+};
+
+export const getUserVotes = async (userId: string) => {
+  const votesRef = collection(db, 'votes');
+  const q = query(votesRef, where('userId', '==', userId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+export const getPollVotes = async (pollId: string) => {
+  const votesRef = collection(db, 'votes');
+  const q = query(votesRef, where('pollId', '==', pollId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+export const setUserRole = async (userId: string, role: 'user' | 'admin') => {
+  const userRef = doc(db, 'users', userId);
+  await setDoc(userRef, {
+    role,
+    updatedAt: Timestamp.now()
+  }, { merge: true });
+};
+
+export const getUserRole = async (userId: string) => {
+  const userRef = doc(db, 'users', userId);
+  const userDoc = await getDoc(userRef);
+  return userDoc.exists() ? userDoc.data()?.role : 'user';
+};
+
+export { db, analytics };
 
 export default auth;
