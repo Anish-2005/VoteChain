@@ -60,11 +60,5 @@
     "@types/react-router-dom": "^5.3.3",
     "hardhat": "^2.19.4",
     "typescript": "^5.9.3"
-  },
-  "overrides": {
-    "ajv": "8.17.1",
-    "ajv-keywords": "^5.1.0",
-    "ajv-formats": "^2.1.1",
-    "fork-ts-checker-webpack-plugin": "^7.0.0"
   }
 }
