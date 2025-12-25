@@ -4,6 +4,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { useVotingStore } from './store/useVotingStore';
 import { getCandidates } from './utils/blockchain';
 
+const MotionDiv = motion.div as any;
+
 const AdminPanel = () => {
   const { candidates, setCandidates } = useVotingStore();
   const [loading, setLoading] = useState(true);
@@ -23,7 +25,7 @@ const AdminPanel = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-white p-8">
-      <motion.div
+      <MotionDiv
         className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-xl"
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -35,7 +37,7 @@ const AdminPanel = () => {
           <h3 className="text-xl font-semibold mb-4">Candidates</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {candidates.map((candidate) => (
-              <motion.div
+              <MotionDiv
                 key={candidate.id}
                 className="p-4 bg-gray-50 rounded-lg"
                 initial={{ opacity: 0 }}
@@ -44,7 +46,7 @@ const AdminPanel = () => {
               >
                 <h4 className="font-semibold">{candidate.name}</h4>
                 <p>Votes: {candidate.voteCount}</p>
-              </motion.div>
+              </MotionDiv>
             ))}
           </div>
         </div>
@@ -62,7 +64,7 @@ const AdminPanel = () => {
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </motion.div>
+      </MotionDiv>
     </div>
   );
 };

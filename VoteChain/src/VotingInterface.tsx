@@ -3,6 +3,10 @@ import { motion } from 'framer-motion';
 import { useVotingStore } from './store/useVotingStore';
 import { connectWallet, getCandidates, vote, hasVoted } from './utils/blockchain';
 
+const MotionH2 = motion.h2 as any;
+const MotionButton = motion.button as any;
+const MotionDiv = motion.div as any;
+
 const VotingInterface = () => {
   const { candidates, hasVoted: storeHasVoted, setCandidates, setHasVoted } = useVotingStore();
   const [selectedCandidate, setSelectedCandidate] = useState<number | null>(null);
@@ -38,17 +42,17 @@ const VotingInterface = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-white p-8">
-      <motion.h2
+      <MotionH2
         className="text-3xl font-bold text-gray-800 mb-6"
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 1, ease: "easeOut" }}
       >
         Blockchain Voting
-      </motion.h2>
+      </MotionH2>
 
       {!walletConnected ? (
-        <motion.button
+        <MotionButton
           onClick={handleConnectWallet}
           className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           initial={{ opacity: 0 }}
@@ -56,7 +60,7 @@ const VotingInterface = () => {
           transition={{ duration: 0.5 }}
         >
           Connect Wallet
-        </motion.button>
+        </MotionButton>
       ) : (
         <>
           {storeHasVoted ? (
@@ -67,7 +71,7 @@ const VotingInterface = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {candidates.map((candidate) => (
-              <motion.div
+              <MotionDiv
                 key={candidate.id}
                 className="p-6 bg-white rounded-lg shadow-lg"
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -88,12 +92,12 @@ const VotingInterface = () => {
                     Select
                   </button>
                 )}
-              </motion.div>
+              </MotionDiv>
             ))}
           </div>
 
           {!storeHasVoted && selectedCandidate && (
-            <motion.button
+            <MotionButton
               onClick={handleVote}
               className="mt-6 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
               initial={{ opacity: 0 }}
@@ -101,7 +105,7 @@ const VotingInterface = () => {
               transition={{ duration: 0.5 }}
             >
               Submit Vote
-            </motion.button>
+            </MotionButton>
           )}
         </>
       )}
