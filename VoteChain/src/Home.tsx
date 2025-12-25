@@ -139,6 +139,29 @@ const Home = () => {
         </motion.div>
       </main>
 
+      <div className="text-center py-6">
+        <div className="flex gap-4 justify-center">
+          <Link to="/vote">
+            <motion.button
+              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Vote Now
+            </motion.button>
+          </Link>
+          <Link to="/results">
+            <motion.button
+              className="px-8 py-4 bg-gradient-to-r from-green-500 to-teal-600 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              View Results
+            </motion.button>
+          </Link>
+        </div>
+      </div>
+
       <footer className="text-center py-6 border-t mt-10">
         <p className="text-gray-500 text-sm">&copy; 2025 VoteChain. All rights reserved.</p>
       </footer>
