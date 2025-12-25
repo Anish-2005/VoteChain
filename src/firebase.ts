@@ -87,14 +87,44 @@ export const getPolls = async (): Promise<Poll[]> => {
   const pollsRef = collection(db, 'polls');
   const q = query(pollsRef, orderBy('createdAt', 'desc'));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Poll));
+  return snapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      title: data.title || '',
+      description: data.description || '',
+      candidates: data.candidates || [],
+      startDate: data.startDate,
+      endDate: data.endDate,
+      status: data.status || 'draft',
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      createdBy: data.createdBy || ''
+    } as Poll;
+  });
 };
 
 export const getActivePoll = async (): Promise<Poll | null> => {
   const pollsRef = collection(db, 'polls');
   const q = query(pollsRef, where('status', '==', 'active'));
   const snapshot = await getDocs(q);
-  return snapshot.docs.length > 0 ? { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Poll : null;
+  if (snapshot.docs.length > 0) {
+    const doc = snapshot.docs[0];
+    const data = doc.data();
+    return {
+      id: doc.id,
+      title: data.title || '',
+      description: data.description || '',
+      candidates: data.candidates || [],
+      startDate: data.startDate,
+      endDate: data.endDate,
+      status: data.status || 'draft',
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      createdBy: data.createdBy || ''
+    } as Poll;
+  }
+  return null;
 };
 
 export const updatePollStatus = async (pollId: string, status: 'draft' | 'active' | 'ended') => {
