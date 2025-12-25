@@ -9,7 +9,7 @@ interface Candidate {
 interface VotingState {
   candidates: Candidate[];
   hasVoted: boolean;
-  setCandidates: (candidates) => void;
+  setCandidates: (candidates: Candidate[]) => void;
   setHasVoted: (hasVoted: boolean) => void;
 }
 

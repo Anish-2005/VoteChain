@@ -7,6 +7,7 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-200 to-white p-6">
       <header className="text-center py-10">
+        {/* @ts-ignore */}
         <motion.h1
            className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-600 leading-snug"
           initial={{ opacity: 0, y: -30 }}
@@ -15,6 +16,7 @@ const Home = () => {
         >
           Welcome to the Future of Voting
         </motion.h1>
+        {/* @ts-ignore */}
         <motion.p
           className="text-xl text-gray-600 mt-4 tracking-wide"
           initial={{ opacity: 0, y: 20 }}
@@ -27,6 +29,7 @@ const Home = () => {
 
       <main className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-10 py-10">
         {/* Google Cloud Card */}
+        {/* @ts-ignore */}
         <motion.div
           className="bg-white bg-opacity-40 backdrop-blur-md shadow-xl rounded-lg overflow-hidden hover:scale-105 transform transition-all duration-500 hover:shadow-2xl border-2 border-transparent hover:border-blue-400"
           initial={{ opacity: 0 }}
@@ -53,6 +56,7 @@ const Home = () => {
         </motion.div>
 
         {/* Blockchain Secured Card */}
+        {/* @ts-ignore */}
         <motion.div
           className="bg-white bg-opacity-40 backdrop-blur-md shadow-xl rounded-lg overflow-hidden hover:scale-105 transform transition-all duration-500 hover:shadow-2xl border-2 border-transparent hover:border-green-400"
           initial={{ opacity: 0 }}
@@ -79,6 +83,7 @@ const Home = () => {
         </motion.div>
 
         {/* Participate in Polls Card */}
+        {/* @ts-ignore */}
         <motion.div
           className="bg-white bg-opacity-40 backdrop-blur-md shadow-xl rounded-lg overflow-hidden hover:scale-105 transform transition-all duration-500 hover:shadow-2xl border-2 border-transparent hover:border-blue-400"
           initial={{ opacity: 0 }}
@@ -109,6 +114,7 @@ const Home = () => {
         </motion.div>
 
         {/* Create Your Poll Card */}
+        {/* @ts-ignore */}
         <motion.div
           className="bg-white bg-opacity-40 backdrop-blur-md shadow-xl rounded-lg overflow-hidden hover:scale-105 transform transition-all duration-500 hover:shadow-2xl border-2 border-transparent hover:border-green-400"
           initial={{ opacity: 0 }}
