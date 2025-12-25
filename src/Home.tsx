@@ -37,52 +37,52 @@ const Home = () => {
       <ParticleField />
 
       {/* Navigation */}
-      <nav className="relative z-20 p-6">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+      <nav className="relative z-40">
+        <div className="max-w-7xl mx-auto sticky top-4 px-4 py-3 backdrop-blur-md bg-white/5 dark:bg-gray-50/6 rounded-xl shadow-lg flex items-center justify-between">
           <motion.div
-            className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent"
+            className="flex items-center gap-3"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-            VoteChain
+            <div className="w-10 h-10 rounded-md bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center shadow-sm">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="white" fillOpacity="0.12"/></svg>
+            </div>
+            <div className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">VoteChain</div>
           </motion.div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-gray-300 dark:text-gray-600 hover:text-cyan-400 dark:hover:text-cyan-600 transition-colors">Features</a>
-            <a href="#how-it-works" className="text-gray-300 dark:text-gray-600 hover:text-cyan-400 dark:hover:text-cyan-600 transition-colors">How It Works</a>
-            <a href="#stats" className="text-gray-300 dark:text-gray-600 hover:text-cyan-400 dark:hover:text-cyan-600 transition-colors">Statistics</a>
+          <div className="hidden md:flex items-center space-x-6">
+            <a href="#features" className="text-gray-300 dark:text-gray-600 hover:text-cyan-400 dark:hover:text-cyan-600 transition-colors px-3 py-2 rounded-md">Features</a>
+            <a href="#how-it-works" className="text-gray-300 dark:text-gray-600 hover:text-cyan-400 dark:hover:text-cyan-600 transition-colors px-3 py-2 rounded-md">How It Works</a>
+            <a href="#stats" className="text-gray-300 dark:text-gray-600 hover:text-cyan-400 dark:hover:text-cyan-600 transition-colors px-3 py-2 rounded-md">Statistics</a>
             <ThemeToggle />
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center space-x-4">
+          <div className="md:hidden flex items-center space-x-3">
             <ThemeToggle />
             <button
-              className="text-white"
+              className="text-white p-2 rounded-md bg-black/20 dark:bg-white/10"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
-        </div>
 
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <motion.div
-            className="md:hidden absolute top-full left-0 right-0 bg-slate-900/95 dark:bg-gray-100/95 backdrop-blur-sm border-t border-slate-700 dark:border-gray-300"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-          >
-            <div className="flex flex-col space-y-4 p-6">
-              <a href="#features" className="text-gray-300 dark:text-gray-600 hover:text-cyan-400 dark:hover:text-cyan-600 transition-colors" onClick={() => setIsMenuOpen(false)}>Features</a>
-              <a href="#how-it-works" className="text-gray-300 dark:text-gray-600 hover:text-cyan-400 dark:hover:text-cyan-600 transition-colors" onClick={() => setIsMenuOpen(false)}>How It Works</a>
-              <a href="#stats" className="text-gray-300 dark:text-gray-600 hover:text-cyan-400 dark:hover:text-cyan-600 transition-colors" onClick={() => setIsMenuOpen(false)}>Statistics</a>
-            </div>
-          </motion.div>
-        )}
+          {isMenuOpen && (
+            <motion.div
+              className="absolute top-full left-0 right-0 mt-3 bg-slate-900/95 dark:bg-white/95 backdrop-blur-sm border-t border-slate-700 dark:border-gray-300 md:hidden"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <div className="flex flex-col space-y-4 p-6">
+                <a href="#features" className="text-gray-300 dark:text-gray-600 hover:text-cyan-400 dark:hover:text-cyan-600 transition-colors" onClick={() => setIsMenuOpen(false)}>Features</a>
+                <a href="#how-it-works" className="text-gray-300 dark:text-gray-600 hover:text-cyan-400 dark:hover:text-cyan-600 transition-colors" onClick={() => setIsMenuOpen(false)}>How It Works</a>
+                <a href="#stats" className="text-gray-300 dark:text-gray-600 hover:text-cyan-400 dark:hover:text-cyan-600 transition-colors" onClick={() => setIsMenuOpen(false)}>Statistics</a>
+              </div>
+            </motion.div>
+          )}
+        </div>
       </nav>
 
       {/* Hero Section */}
@@ -143,6 +143,28 @@ const Home = () => {
               View Results
             </button>
           </MotionDiv>
+
+          {/* Decorative blob (right) and floating CTA */}
+          <div className="pointer-events-none hidden md:block absolute right-12 top-12 opacity-30 transform-gpu">
+            <svg viewBox="0 0 600 600" className="w-56 h-56" xmlns="http://www.w3.org/2000/svg">
+              <g transform="translate(300,300)">
+                <path d="M120,-160C160,-120,190,-80,200,-30C210,20,200,80,170,120C140,160,90,180,40,190C-10,200,-60,200,-100,180C-140,160,-170,120,-190,70C-210,20,-220,-40,-200,-90C-180,-140,-140,-170,-90,-190C-40,-210,20,-200,70,-180C120,-160,120,-160,120,-160Z" fill="url(#g)" />
+                <defs>
+                  <linearGradient id="g" x1="0" x2="1">
+                    <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0.9" />
+                    <stop offset="100%" stopColor="#c084fc" stopOpacity="0.6" />
+                  </linearGradient>
+                </defs>
+              </g>
+            </svg>
+          </div>
+
+          <div className="absolute left-1/2 transform -translate-x-1/2 -bottom-8">
+            <button className="px-6 py-3 bg-gradient-to-r from-yellow-400 to-pink-500 text-black font-semibold rounded-full shadow-2xl hover:scale-105 transition-transform">
+              Try Live Demo
+            </button>
+          </div>
+
         </div>
       </section>
 
@@ -168,7 +190,7 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Blockchain Security */}
             <MotionDiv
-              className="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 dark:from-gray-100/50 dark:to-gray-200/50 backdrop-blur-sm rounded-2xl p-8 hover:from-cyan-900/20 hover:to-blue-900/20 dark:hover:from-cyan-100/20 dark:hover:to-blue-100/20 border border-slate-700/50 dark:border-gray-300/50 hover:border-cyan-500/30 dark:hover:border-cyan-500/30 transition-all duration-300"
+              className="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 dark:from-gray-100/50 dark:to-gray-200/50 backdrop-blur-sm rounded-2xl p-8 hover:from-cyan-900/20 hover:to-blue-900/20 dark:hover:from-cyan-100/20 dark:hover:to-blue-100/20 border border-slate-700/50 dark:border-gray-300/50 hover:border-cyan-500/30 dark:hover:border-cyan-500/30 transition-all duration-300 transform-gpu will-change-transform hover:-rotate-3 hover:scale-105"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
@@ -190,7 +212,7 @@ const Home = () => {
 
             {/* Real-time Analytics */}
             <MotionDiv
-              className="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 dark:from-gray-100/50 dark:to-gray-200/50 backdrop-blur-sm rounded-2xl p-8 hover:from-purple-900/20 hover:to-pink-900/20 dark:hover:from-purple-100/20 dark:hover:to-pink-100/20 border border-slate-700/50 dark:border-gray-300/50 hover:border-purple-500/30 dark:hover:border-purple-500/30 transition-all duration-300"
+              className="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 dark:from-gray-100/50 dark:to-gray-200/50 backdrop-blur-sm rounded-2xl p-8 hover:from-purple-900/20 hover:to-pink-900/20 dark:hover:from-purple-100/20 dark:hover:to-pink-100/20 border border-slate-700/50 dark:border-gray-300/50 hover:border-purple-500/30 dark:hover:border-purple-500/30 transition-all duration-300 transform-gpu will-change-transform hover:-rotate-3 hover:scale-105"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -212,7 +234,7 @@ const Home = () => {
 
             {/* Decentralized Access */}
             <MotionDiv
-              className="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 dark:from-gray-100/50 dark:to-gray-200/50 backdrop-blur-sm rounded-2xl p-8 hover:from-green-900/20 hover:to-emerald-900/20 dark:hover:from-green-100/20 dark:hover:to-emerald-100/20 border border-slate-700/50 dark:border-gray-300/50 hover:border-green-500/30 dark:hover:border-green-500/30 transition-all duration-300"
+              className="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 dark:from-gray-100/50 dark:to-gray-200/50 backdrop-blur-sm rounded-2xl p-8 hover:from-green-900/20 hover:to-emerald-900/20 dark:hover:from-green-100/20 dark:hover:to-emerald-100/20 border border-slate-700/50 dark:border-gray-300/50 hover:border-green-500/30 dark:hover:border-green-500/30 transition-all duration-300 transform-gpu will-change-transform hover:-rotate-3 hover:scale-105"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
@@ -234,7 +256,7 @@ const Home = () => {
 
             {/* Instant Verification */}
             <MotionDiv
-              className="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 dark:from-gray-100/50 dark:to-gray-200/50 backdrop-blur-sm rounded-2xl p-8 hover:from-orange-900/20 hover:to-red-900/20 dark:hover:from-orange-100/20 dark:hover:to-red-100/20 border border-slate-700/50 dark:border-gray-300/50 hover:border-orange-500/30 dark:hover:border-orange-500/30 transition-all duration-300"
+              className="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 dark:from-gray-100/50 dark:to-gray-200/50 backdrop-blur-sm rounded-2xl p-8 hover:from-orange-900/20 hover:to-red-900/20 dark:hover:from-orange-100/20 dark:hover:to-red-100/20 border border-slate-700/50 dark:border-gray-300/50 hover:border-orange-500/30 dark:hover:border-orange-500/30 transition-all duration-300 transform-gpu will-change-transform hover:-rotate-3 hover:scale-105"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
@@ -256,7 +278,7 @@ const Home = () => {
 
             {/* Privacy Protection */}
             <MotionDiv
-              className="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 dark:from-gray-100/50 dark:to-gray-200/50 backdrop-blur-sm rounded-2xl p-8 hover:from-indigo-900/20 hover:to-purple-900/20 dark:hover:from-indigo-100/20 dark:hover:to-purple-100/20 border border-slate-700/50 dark:border-gray-300/50 hover:border-indigo-500/30 dark:hover:border-indigo-500/30 transition-all duration-300"
+              className="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 dark:from-gray-100/50 dark:to-gray-200/50 backdrop-blur-sm rounded-2xl p-8 hover:from-indigo-900/20 hover:to-purple-900/20 dark:hover:from-indigo-100/20 dark:hover:to-purple-100/20 border border-slate-700/50 dark:border-gray-300/50 hover:border-indigo-500/30 dark:hover:border-indigo-500/30 transition-all duration-300 transform-gpu will-change-transform hover:-rotate-3 hover:scale-105"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
@@ -278,7 +300,7 @@ const Home = () => {
 
             {/* Smart Contracts */}
             <MotionDiv
-              className="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 dark:from-gray-100/50 dark:to-gray-200/50 backdrop-blur-sm rounded-2xl p-8 hover:from-teal-900/20 hover:to-cyan-900/20 dark:hover:from-teal-100/20 dark:hover:to-cyan-100/20 border border-slate-700/50 dark:border-gray-300/50 hover:border-teal-500/30 dark:hover:border-teal-500/30 transition-all duration-300"
+              className="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 dark:from-gray-100/50 dark:to-gray-200/50 backdrop-blur-sm rounded-2xl p-8 hover:from-teal-900/20 hover:to-cyan-900/20 dark:hover:from-teal-100/20 dark:hover:to-cyan-100/20 border border-slate-700/50 dark:border-gray-300/50 hover:border-teal-500/30 dark:hover:border-teal-500/30 transition-all duration-300 transform-gpu will-change-transform hover:-rotate-3 hover:scale-105"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6 }}
