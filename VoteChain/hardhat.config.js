@@ -1,6 +1,8 @@
-require("@nomicfoundation/hardhat-ethers");
+import "@nomicfoundation/hardhat-ethers";
 
 /** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
+const config = {
   solidity: "0.8.0",
 };
+
+export default config;

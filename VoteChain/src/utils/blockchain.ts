@@ -26,23 +26,39 @@ export const connectWallet = async () => {
 };
 
 export const getCandidates = async () => {
-  if (contract) {
-    const candidates = await contract.getCandidates();
-    return candidates.map((c: any) => ({ id: Number(c[0]), name: c[1], voteCount: Number(c[2]) }));
-  }
-  return [];
+  // Mock data for demonstration
+  return [
+    { id: 1, name: 'Candidate 1', voteCount: 10 },
+    { id: 2, name: 'Candidate 2', voteCount: 15 },
+  ];
+  // Uncomment below when contract is deployed
+  // if (contract) {
+  //   try {
+  //     const candidates = await contract.getCandidates();
+  //     return candidates.map((c: any) => ({ id: Number(c[0]), name: c[1], voteCount: Number(c[2]) }));
+  //   } catch (error) {
+  //     console.error('Contract call failed:', error);
+  //   }
+  // }
+  // return [];
 };
 
 export const vote = async (candidateId: number) => {
-  if (contract) {
-    const tx = await contract.vote(candidateId);
-    await tx.wait();
-  }
+  // Mock vote for demonstration
+  console.log('Voted for candidate', candidateId);
+  // Uncomment below when contract is deployed
+  // if (contract) {
+  //   const tx = await contract.vote(candidateId);
+  //   await tx.wait();
+  // }
 };
 
 export const hasVoted = async (address: string) => {
-  if (contract) {
-    return await contract.voters(address);
-  }
+  // Mock: assume not voted for demonstration
   return false;
+  // Uncomment below when contract is deployed
+  // if (contract) {
+  //   return await contract.voters(address);
+  // }
+  // return false;
 };
