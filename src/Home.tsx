@@ -1,5 +1,4 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Shield,
@@ -12,7 +11,9 @@ import {
   ArrowRight,
   Star,
   TrendingUp,
-  Award
+  Award,
+  Menu,
+  X
 } from 'lucide-react';
 import Blockchain3DScene from './components/Blockchain3DScene';
 import ThemeToggle from './components/ThemeToggle';
@@ -25,19 +26,18 @@ const MotionButton = motion.button as any;
 const MotionSection = motion.section as any;
 
 const Home = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900 text-white relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white relative overflow-hidden">
       {/* 3D Background Scene */}
       <Blockchain3DScene />
 
       {/* Particle Field */}
       <ParticleField />
 
-      {/* Theme Toggle */}
-      <ThemeToggle />
-
       {/* Navigation */}
-      <nav className="relative z-10 p-6">
+      <nav className="relative z-20 p-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <motion.div
             className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent"
@@ -47,12 +47,42 @@ const Home = () => {
           >
             VoteChain
           </motion.div>
-          <div className="hidden md:flex space-x-8">
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
             <a href="#features" className="text-gray-300 hover:text-cyan-400 transition-colors">Features</a>
             <a href="#how-it-works" className="text-gray-300 hover:text-cyan-400 transition-colors">How It Works</a>
             <a href="#stats" className="text-gray-300 hover:text-cyan-400 transition-colors">Statistics</a>
+            <ThemeToggle />
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center space-x-4">
+            <ThemeToggle />
+            <button
+              className="text-white"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <motion.div
+            className="md:hidden absolute top-full left-0 right-0 bg-slate-900/95 backdrop-blur-sm border-t border-slate-700"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+          >
+            <div className="flex flex-col space-y-4 p-6">
+              <a href="#features" className="text-gray-300 hover:text-cyan-400 transition-colors" onClick={() => setIsMenuOpen(false)}>Features</a>
+              <a href="#how-it-works" className="text-gray-300 hover:text-cyan-400 transition-colors" onClick={() => setIsMenuOpen(false)}>How It Works</a>
+              <a href="#stats" className="text-gray-300 hover:text-cyan-400 transition-colors" onClick={() => setIsMenuOpen(false)}>Statistics</a>
+            </div>
+          </motion.div>
+        )}
       </nav>
 
       {/* Hero Section */}
@@ -71,7 +101,7 @@ const Home = () => {
           </MotionDiv>
 
           <MotionH1
-            className="text-6xl md:text-8xl font-bold mb-8 leading-tight"
+            className="text-5xl md:text-7xl font-bold mb-8 leading-tight"
             initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.2 }}
@@ -80,11 +110,11 @@ const Home = () => {
               VoteChain
             </span>
             <br />
-            <span className="text-4xl md:text-6xl text-gray-300">Revolution</span>
+            <span className="text-3xl md:text-5xl text-gray-300">Revolution</span>
           </MotionH1>
 
           <MotionP
-            className="text-xl md:text-2xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed"
+            className="text-lg md:text-xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
@@ -99,32 +129,24 @@ const Home = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
           >
-            <Link to="/vote">
-              <MotionButton
-                className="group px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-2xl hover:shadow-cyan-500/25 transform hover:scale-105 transition-all duration-300 flex items-center gap-3"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Users className="w-6 h-6" />
-                Start Voting
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </MotionButton>
-            </Link>
-            <Link to="/results">
-              <MotionButton
-                className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-semibold rounded-xl shadow-2xl hover:shadow-purple-500/25 transform hover:scale-105 transition-all duration-300 flex items-center gap-3"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <BarChart3 className="w-6 h-6" />
-                View Results
-              </MotionButton>
-            </Link>
+            <button
+              className="group px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-2xl hover:shadow-cyan-500/25 transform hover:scale-105 transition-all duration-300 flex items-center gap-3"
+            >
+              <Users className="w-6 h-6" />
+              Start Voting
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </button>
+            <button
+              className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-semibold rounded-xl shadow-2xl hover:shadow-purple-500/25 transform hover:scale-105 transition-all duration-300 flex items-center gap-3"
+            >
+              <BarChart3 className="w-6 h-6" />
+              View Results
+            </button>
           </MotionDiv>
         </div>
       </section>
 
-      {/* Features Grid */}
+      {/* Features Section */}
       <MotionSection
         id="features"
         className="relative z-10 py-20 px-6"
@@ -352,101 +374,209 @@ const Home = () => {
           <p className="text-xl text-gray-300 mb-8">
             Join thousands of voters who have already experienced the future of democratic participation.
           </p>
-          <Link to="/vote">
-            <MotionButton
-              className="px-12 py-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold text-xl rounded-xl shadow-2xl hover:shadow-cyan-500/25 transform hover:scale-105 transition-all duration-300 flex items-center gap-3 mx-auto"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Users className="w-7 h-7" />
-              Cast Your Vote Now
-              <ArrowRight className="w-6 h-6" />
-            </MotionButton>
-          </Link>
+          <MotionButton
+            className="px-12 py-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold text-xl rounded-xl shadow-2xl hover:shadow-cyan-500/25 transform hover:scale-105 transition-all duration-300 flex items-center gap-3 mx-auto"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Users className="w-7 h-7" />
+            Cast Your Vote Now
+            <ArrowRight className="w-6 h-6" />
+          </MotionButton>
         </div>
       </MotionSection>
 
-      {/* Features Grid */}
-      <main className="max-w-7xl mx-auto px-6 pb-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* User-Friendly Interface */}
-          <MotionDiv
-            className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 border border-gray-100"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            whileHover={{ y: -5 }}
-          >
-            <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center mb-6">
-              <Users className="w-6 h-6 text-pink-600" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Intuitive Experience</h3>
-            <p className="text-gray-600 leading-relaxed">
-              Clean, modern interface designed for accessibility. Whether you're voting or managing polls, the experience is smooth and straightforward.
-            </p>
-          </MotionDiv>
-
-          {/* Lightning Fast */}
-          <MotionDiv
-            className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 border border-gray-100"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            whileHover={{ y: -5 }}
-          >
-            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-6">
-              <Zap className="w-6 h-6 text-yellow-600" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">Lightning Fast</h3>
-            <p className="text-gray-600 leading-relaxed">
-              Optimized performance with fast loading times and instant vote confirmation. Built with modern web technologies for the best user experience.
-            </p>
-          </MotionDiv>
+      {/* Statistics Section */}
+      <MotionSection
+        id="stats"
+        className="relative z-10 py-20 px-6 bg-gradient-to-r from-slate-800/30 to-slate-900/30 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        viewport={{ once: true }}
+      >
+        <div className="max-w-7xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-bold mb-16 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+            By the Numbers
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <MotionDiv
+              className="text-center"
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true }}
+            >
+              <div className="text-4xl md:text-6xl font-bold text-cyan-400 mb-2">10K+</div>
+              <div className="text-gray-300">Votes Cast</div>
+            </MotionDiv>
+            <MotionDiv
+              className="text-center"
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+            >
+              <div className="text-4xl md:text-6xl font-bold text-purple-400 mb-2">500+</div>
+              <div className="text-gray-300">Elections</div>
+            </MotionDiv>
+            <MotionDiv
+              className="text-center"
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              viewport={{ once: true }}
+            >
+              <div className="text-4xl md:text-6xl font-bold text-green-400 mb-2">99.9%</div>
+              <div className="text-gray-300">Uptime</div>
+            </MotionDiv>
+            <MotionDiv
+              className="text-center"
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              viewport={{ once: true }}
+            >
+              <div className="text-4xl md:text-6xl font-bold text-orange-400 mb-2">50+</div>
+              <div className="text-gray-300">Countries</div>
+            </MotionDiv>
+          </div>
         </div>
-      </main>
+      </MotionSection>
+
+      {/* CTA Section */}
+      <MotionSection
+        className="relative z-10 py-20 px-6"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        viewport={{ once: true }}
+      >
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+            Ready to Shape the Future?
+          </h2>
+          <p className="text-xl text-gray-300 mb-8">
+            Join thousands of voters who have already experienced the future of democratic participation.
+          </p>
+          <MotionButton
+            className="px-12 py-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold text-xl rounded-xl shadow-2xl hover:shadow-cyan-500/25 transform hover:scale-105 transition-all duration-300 flex items-center gap-3 mx-auto"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Users className="w-7 h-7" />
+            Cast Your Vote Now
+            <ArrowRight className="w-6 h-6" />
+          </MotionButton>
+        </div>
+      </MotionSection>
 
       {/* How It Works Section */}
-      <MotionDiv
-          className="mt-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white text-center"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.7 }}
-        >
-          <h2 className="text-3xl font-bold mb-6">How VoteChain Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold">1</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Sign In</h3>
-              <p className="text-blue-100">Authenticate securely with Google OAuth</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold">2</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Vote Securely</h3>
-              <p className="text-blue-100">Cast your vote on the blockchain with MetaMask</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold">3</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Track Results</h3>
-              <p className="text-blue-100">View real-time results and analytics</p>
-            </div>
+      <MotionSection
+        id="how-it-works"
+        className="relative z-10 py-20 px-6"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 1 }}
+        viewport={{ once: true }}
+      >
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+              How VoteChain Works
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Three simple steps to participate in the future of democratic voting.
+            </p>
           </div>
-        </MotionDiv>
 
-        {/* Footer */}
-      <footer className="bg-gray-50 border-t border-gray-200 py-8 px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <MotionDiv
+              className="text-center group"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true }}
+            >
+              <div className="w-20 h-20 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg">
+                <span className="text-2xl font-bold text-white">1</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-4">Sign In</h3>
+              <p className="text-gray-300 leading-relaxed">
+                Authenticate securely with Google OAuth for instant access to the platform.
+              </p>
+            </MotionDiv>
+
+            <MotionDiv
+              className="text-center group"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+            >
+              <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg">
+                <span className="text-2xl font-bold text-white">2</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-4">Vote Securely</h3>
+              <p className="text-gray-300 leading-relaxed">
+                Cast your vote on the blockchain with MetaMask. Every vote is encrypted and immutable.
+              </p>
+            </MotionDiv>
+
+            <MotionDiv
+              className="text-center group"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              viewport={{ once: true }}
+            >
+              <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform shadow-lg">
+                <span className="text-2xl font-bold text-white">3</span>
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-4">Track Results</h3>
+              <p className="text-gray-300 leading-relaxed">
+                View real-time results and analytics with complete transparency and verifiability.
+              </p>
+            </MotionDiv>
+          </div>
+        </div>
+      </MotionSection>
+
+      {/* Footer */}
+      <footer className="relative z-10 bg-gradient-to-r from-slate-900 to-slate-800 border-t border-slate-700 py-12 px-6">
         <div className="max-w-7xl mx-auto text-center">
-          <p className="text-gray-600 mb-4">
-            Built with ❤️ using React, TypeScript, Firebase, and Ethereum
-          </p>
-          <p className="text-sm text-gray-500">
-            © 2025 VoteChain. Secure, transparent, decentralized voting for the future.
-          </p>
+          <div className="mb-8">
+            <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent mb-4">
+              VoteChain
+            </h3>
+            <p className="text-gray-400 max-w-md mx-auto">
+              Secure, transparent, decentralized voting for the future of democracy.
+            </p>
+          </div>
+
+          <div className="flex flex-col md:flex-row justify-center items-center gap-8 mb-8">
+            <button className="text-gray-300 hover:text-cyan-400 transition-colors">
+              Start Voting
+            </button>
+            <button className="text-gray-300 hover:text-cyan-400 transition-colors">
+              View Results
+            </button>
+            <a href="#features" className="text-gray-300 hover:text-cyan-400 transition-colors">
+              Features
+            </a>
+            <a href="#how-it-works" className="text-gray-300 hover:text-cyan-400 transition-colors">
+              How It Works
+            </a>
+          </div>
+
+          <div className="border-t border-slate-700 pt-8">
+            <p className="text-gray-500 text-sm mb-2">
+              Built with ❤️ using React, TypeScript, Firebase, and Ethereum
+            </p>
+            <p className="text-gray-600 text-xs">
+              © 2025 VoteChain. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>

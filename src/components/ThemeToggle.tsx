@@ -11,17 +11,14 @@ export default function ThemeToggle() {
   return (
     <MotionButton
       onClick={toggleTheme}
-      className="fixed top-6 right-6 z-50 p-3 rounded-full bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 shadow-lg hover:shadow-xl transition-all duration-300"
+      className="p-2 rounded-full bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 hover:bg-gray-700 dark:hover:bg-gray-300 transition-all duration-300"
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5 }}
     >
       {theme === 'dark' ? (
-        <Sun className="w-6 h-6" />
+        <Sun className="w-5 h-5" />
       ) : (
-        <Moon className="w-6 h-6" />
+        <Moon className="w-5 h-5" />
       )}
     </MotionButton>
   );

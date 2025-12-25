@@ -1,11 +1,28 @@
 import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
+import type { ThreeElements } from '@react-three/fiber';
 import { Sphere, Box, Torus, Float, Text, Stars } from '@react-three/drei';
 import * as THREE from 'three';
+
+// Ensure TypeScript recognizes @react-three/fiber intrinsic elements
+declare global {
+  namespace JSX {
+    interface IntrinsicElements extends ThreeElements {}
+  }
+}
 
 // Animated Blockchain Cube
 function BlockchainCube({ position, delay = 0 }: { position: [number, number, number]; delay?: number }) {
   const meshRef = useRef<THREE.Mesh>(null);
+
+  const boxMaterial = useMemo(() => new THREE.MeshStandardMaterial({
+    color: "#00ffff",
+    emissive: "#001122",
+    emissiveIntensity: 0.2,
+    transparent: true,
+    opacity: 0.8,
+    wireframe: true
+  }), []);
 
   useFrame((state) => {
     if (meshRef.current) {
@@ -17,20 +34,7 @@ function BlockchainCube({ position, delay = 0 }: { position: [number, number, nu
 
   return (
     <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
-      <Box ref={meshRef} position={position} args={[0.8, 0.8, 0.8]}>
-        <meshStandardMaterial
-          color="#00ffff"
-          emissive="#001122"
-          emissiveIntensity={0.2}
-          transparent
-          opacity={0.8}
-        />
-        {/* Block edges */}
-        <lineSegments>
-          <edgesGeometry args={[new THREE.BoxGeometry(0.8, 0.8, 0.8)]} />
-          <lineBasicMaterial color="#ffffff" />
-        </lineSegments>
-      </Box>
+      <Box ref={meshRef} position={position} args={[0.8, 0.8, 0.8]} material={boxMaterial} />
     </Float>
   );
 }
@@ -39,6 +43,14 @@ function BlockchainCube({ position, delay = 0 }: { position: [number, number, nu
 function ChainLink({ position, rotation }: { position: [number, number, number]; rotation: [number, number, number] }) {
   const meshRef = useRef<THREE.Mesh>(null);
 
+  const torusMaterial = useMemo(() => new THREE.MeshStandardMaterial({
+    color: "#ff6b35",
+    emissive: "#331100",
+    emissiveIntensity: 0.1,
+    metalness: 0.8,
+    roughness: 0.2
+  }), []);
+
   useFrame((state) => {
     if (meshRef.current) {
       meshRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 2) * 0.1;
@@ -46,21 +58,13 @@ function ChainLink({ position, rotation }: { position: [number, number, number];
   });
 
   return (
-    <Torus ref={meshRef} position={position} rotation={rotation} args={[0.3, 0.1, 8, 16]}>
-      <meshStandardMaterial
-        color="#ff6b35"
-        emissive="#331100"
-        emissiveIntensity={0.1}
-        metalness={0.8}
-        roughness={0.2}
-      />
-    </Torus>
+    <Torus ref={meshRef} position={position} rotation={rotation} args={[0.3, 0.1, 8, 16]} material={torusMaterial} />
   );
 }
 
 // Floating Crypto Symbols
 function CryptoSymbol({ symbol, position }: { symbol: string; position: [number, number, number] }) {
-  const textRef = useRef<THREE.Mesh>(null);
+  const textRef = useRef<any>(null);
 
   useFrame((state) => {
     if (textRef.current) {
@@ -78,7 +82,6 @@ function CryptoSymbol({ symbol, position }: { symbol: string; position: [number,
         color="#00ff88"
         anchorX="center"
         anchorY="middle"
-        font="/fonts/helvetiker_regular.typeface.json"
       >
         {symbol}
       </Text>
@@ -115,12 +118,24 @@ function BlockchainScene() {
     return links;
   }, []);
 
+  const sphereMaterial = useMemo(() => new THREE.MeshStandardMaterial({
+    color: "#0066ff",
+    emissive: "#001133",
+    emissiveIntensity: 0.3,
+    transparent: true,
+    opacity: 0.7
+  }), []);
+
   return (
     <>
       {/* Lighting */}
+      {/* @ts-ignore */}
       <ambientLight intensity={0.3} />
+      {/* @ts-ignore */}
       <pointLight position={[10, 10, 10]} intensity={0.5} color="#00ffff" />
+      {/* @ts-ignore */}
       <pointLight position={[-10, -10, -10]} intensity={0.3} color="#ff6b35" />
+      {/* @ts-ignore */}
       <spotLight
         position={[0, 20, 0]}
         angle={0.3}
@@ -134,15 +149,7 @@ function BlockchainScene() {
       <Stars radius={100} depth={50} count={1000} factor={4} saturation={0} fade speed={1} />
 
       {/* Central Blockchain Network */}
-      <Sphere position={[0, 0, 0]} args={[1, 32, 32]}>
-        <meshStandardMaterial
-          color="#0066ff"
-          emissive="#001133"
-          emissiveIntensity={0.3}
-          transparent
-          opacity={0.7}
-        />
-      </Sphere>
+      <Sphere position={[0, 0, 0]} args={[1, 32, 32]} material={sphereMaterial} />
 
       {/* Blockchain Cubes */}
       {cubes.map((position, index) => (
