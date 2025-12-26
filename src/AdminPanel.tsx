@@ -335,22 +335,7 @@ export default function AdminPanel() {
               >
                 + New Proposal
               </button>
-              <button
-                onClick={() => {
-                  // choose poll id: selected -> first real -> first mock
-                  const list = polls.length === 0 ? MOCK_POLLS : polls;
-                  const fallbackId = list && list.length > 0 ? list[0].id : undefined;
-                  const id = selectedPoll?.id ?? fallbackId;
-                  if (id) {
-                    navigate(`/results?pollId=${encodeURIComponent(id)}`, { state: { pollId: id } });
-                  } else {
-                    navigate('/results');
-                  }
-                }}
-                className="text-sm text-neutral-400"
-              >
-                View Results
-              </button>
+             
             </div>
           </header>
 
