@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { logout, onAuthChange, getCurrentUser } from '../firebase';
-import { Link } from 'react-router-dom';
+import { loginWithGoogle, logout, onAuthChange, getCurrentUser } from '../firebase';
 
 const Auth: React.FC = () => {
   const [user, setUser] = useState<any | null>(null);
@@ -26,12 +25,12 @@ const Auth: React.FC = () => {
           </button>
         </>
       ) : (
-        <Link
-          to="/login"
-          className="px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-150 text-sm"
+        <button
+          onClick={() => loginWithGoogle()}
+          className="px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-150"
         >
-          Sign in
-        </Link>
+          Sign in with Google
+        </button>
       )}
     </div>
   );

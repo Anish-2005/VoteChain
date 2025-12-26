@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import ThemeToggle from "./components/ThemeToggle";
-import Auth from "./components/Auth";
+import { useNavigate } from 'react-router-dom';
+import { logout } from './firebase';
 import Blockchain3DScene from "./components/Blockchain3DScene";
 import ParticleField from "./components/ParticleField";
 
@@ -29,6 +30,16 @@ const MotionP = motion.p;
 
 const Home = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (e) {
+      console.warn('Logout failed', e);
+    }
+    navigate('/login');
+  };
 
   return (
     <div
@@ -77,13 +88,17 @@ const Home = () => {
               Stats
             </a>
             <ThemeToggle />
-            <Auth />
+            <button
+              onClick={handleLogout}
+              className="text-sm px-3 py-2 rounded-md bg-transparent border border-neutral-800 light:border-neutral-200 hover:bg-neutral-900/50 light:hover:bg-neutral-100/50"
+            >
+              Logout
+            </button>
           </div>
 
           {/* Mobile */}
           <div className="md:hidden flex items-center gap-3">
             <ThemeToggle />
-            <Auth />
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="p-2 rounded-md border border-neutral-800 light:border-neutral-200"

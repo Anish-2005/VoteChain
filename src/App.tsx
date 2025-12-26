@@ -2,9 +2,9 @@ import React, { useEffect } from 'react';
 import { ThemeProvider } from './ThemeContext';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { onAuthChange, getUserRole, setUserRole, ADMIN_EMAIL, ensureAdminByEmail } from './firebase';
-import AdminRoute from './components/AdminRoute';
 import Home from './Home';
 import VotingInterface from './VotingInterface';
+import ProtectedRoute from './components/ProtectedRoute';
 import Results from './Results';
 import Login from './Login';
 import AdminPanel from './AdminPanel';
@@ -15,15 +15,13 @@ const App = () => {
       <BrowserRouter>
         <AuthRedirectHandler />
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/vote" element={<VotingInterface />} />
+          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/vote" element={<ProtectedRoute><VotingInterface /></ProtectedRoute>} />
           <Route path="/results" element={<Results />} />
           <Route
             path="/adminpanel"
             element={
-              <AdminRoute>
                 <AdminPanel />
-              </AdminRoute>
             }
           />
           <Route path="/login" element={<LoginRoute />} />

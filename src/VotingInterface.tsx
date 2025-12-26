@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import ThemeToggle from "./components/ThemeToggle";
-import Auth from "./components/Auth";
 
 import { useVotingStore } from "./store/useVotingStore";
 import { ethers } from 'ethers';
@@ -215,7 +214,6 @@ const VotingInterface = () => {
               Home
             </Link>
             <ThemeToggle />
-            <Auth />
           </div>
         </div>
       </nav>

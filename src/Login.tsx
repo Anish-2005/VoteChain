@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { loginWithGoogle, onAuthChange, setUserRole, getUserRole } from './firebase';
+import { loginWithGoogle, onAuthChange, setUserRole, getUserRole, isFirebaseConfigured } from './firebase';
 import { User } from 'firebase/auth';
 import { User as UserIcon } from 'lucide-react';
 
@@ -104,9 +104,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
         )}
 
+        {!isFirebaseConfigured && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-yellow-700 text-sm">Firebase is not configured — set REACT_APP_FIREBASE_* env vars and restart the dev server.</p>
+          </div>
+        )}
+
         <button
           onClick={handleLogin}
-          disabled={loading}
+          disabled={loading || !isFirebaseConfigured}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
         >
           {loading ? (

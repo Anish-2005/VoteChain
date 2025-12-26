@@ -1,7 +1,7 @@
 // Firebase setup - reads config from REACT_APP_* environment variables
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
-import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithRedirect, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, query, where, orderBy, Timestamp } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -13,6 +13,12 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID || '',
   measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID || ''
 };
+
+// Validate minimal config so mistakes are surfaced early
+export const isFirebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.authDomain);
+if (!isFirebaseConfigured) {
+  console.warn('Firebase appears to be missing configuration. Make sure REACT_APP_FIREBASE_* env vars are set.');
+}
 
 const app = initializeApp(firebaseConfig);
 
@@ -62,10 +68,19 @@ export interface Poll extends PollData {
   id: string;
 }
 
-// Use redirect-based sign-in to avoid popup issues with COOP/COEP policies
+// Use popup-based sign-in by default. If the popup is blocked the error will be
+// propagated so the UI can surface guidance to the user (enable popups).
 export const loginWithGoogle = async () => {
-  return signInWithRedirect(auth, provider);
+  try {
+    return await signInWithPopup(auth, provider);
+  } catch (err) {
+    console.error('signInWithPopup failed', err);
+    throw err;
+  }
 };
+
+// Alias for explicit popup call (kept for compatibility)
+export const loginWithGooglePopup = loginWithGoogle;
 
 export const logout = async () => {
   return signOut(auth);

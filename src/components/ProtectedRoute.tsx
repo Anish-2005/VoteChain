@@ -9,7 +9,7 @@ interface Props {
 const ProtectedRoute: React.FC<Props> = ({ children }) => {
   const user = getCurrentUser();
   if (!user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
   return children;
 };
