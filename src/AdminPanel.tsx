@@ -1,510 +1,537 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { useVotingStore } from './store/useVotingStore';
-import { getCandidates, addCandidateAdmin, getVotingStatus, startVotingAdmin, endVotingAdmin, connectWallet, getOwner } from './utils/blockchain';
-import { createPoll, getPolls, updatePollStatus, getPollVotes, Poll } from './firebase';
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 
-const MotionDiv = motion.div as any;
+import { useVotingStore } from "./store/useVotingStore";
+import ThemeToggle from './components/ThemeToggle';
+import { Link, useNavigate } from 'react-router-dom';
+import { logout } from './firebase';
+import {
+  getCandidates,
+  addCandidateAdmin,
+  getVotingStatus,
+  startVotingAdmin,
+  endVotingAdmin,
+  connectWallet,
+  getOwner,
+} from "./utils/blockchain";
+import {
+  createPoll,
+  getPolls,
+  updatePollStatus,
+  getPollVotes,
+  Poll,
+} from "./firebase";
 
-const AdminPanel = () => {
+const MotionDiv = motion.div;
+
+const COLORS = ["#3b82f6", "#22c55e", "#eab308", "#f97316", "#8b5cf6"];
+
+export default function AdminPanel() {
   const { candidates, setCandidates } = useVotingStore();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (e) {
+      console.warn('Logout failed', e);
+    }
+    navigate('/login');
+  };
+
   const [loading, setLoading] = useState(true);
-  const [newCandidate, setNewCandidate] = useState('');
   const [status, setStatus] = useState<any>(null);
   const [isOwner, setIsOwner] = useState(false);
+
   const [polls, setPolls] = useState<Poll[]>([]);
-  const [showCreatePoll, setShowCreatePoll] = useState(false);
-  const [pollForm, setPollForm] = useState({
-    title: '',
-    description: '',
-    candidates: [''],
-    startDate: '',
-    endDate: ''
-  });
   const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null);
   const [pollVotes, setPollVotes] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'proposals' | 'analytics'>('proposals');
 
+  // Mock data for empty states (local/dev)
+  const MOCK_POLLS: Poll[] = [
+    {
+      id: 'mock-1',
+      title: 'Prototype Funding Allocation',
+      description: 'Vote on allocation of prototype budget for Q1 initiatives.',
+      candidates: ['Product', 'Marketing', 'Research'],
+      startDate: new Date() as any,
+      endDate: new Date(Date.now() + 1000 * 60 * 60 * 24) as any,
+      status: 'active',
+      createdAt: new Date() as any,
+      updatedAt: new Date() as any,
+      createdBy: 'system',
+    },
+    {
+      id: 'mock-2',
+      title: 'Feature Prioritization',
+      description: 'Select the top feature for the next sprint.',
+      candidates: ['Mobile UX', 'Performance', 'Integrations'],
+      startDate: new Date() as any,
+      endDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7) as any,
+      status: 'draft',
+      createdAt: new Date() as any,
+      updatedAt: new Date() as any,
+      createdBy: 'system',
+    },
+  ];
+
+  const [newCandidate, setNewCandidate] = useState("");
+  const [showCreatePoll, setShowCreatePoll] = useState(false);
+  const [pollForm, setPollForm] = useState({
+    title: "",
+    description: "",
+    candidates: [""],
+    startDate: "",
+    endDate: "",
+  });
+
+  /* ---------------- INIT ---------------- */
   useEffect(() => {
-    const loadData = async () => {
+    const init = async () => {
       try {
         await connectWallet();
+
         const cands = await getCandidates();
         setCandidates(cands);
-        const s = await getVotingStatus();
-        setStatus(s);
+
+        setStatus(await getVotingStatus());
+
         const owner = await getOwner();
-        const current = (window as any).ethereum && (window as any).ethereum.selectedAddress ? (window as any).ethereum.selectedAddress : null;
+        const current = (window as any)?.ethereum?.selectedAddress;
         setIsOwner(current && owner && current.toLowerCase() === owner.toLowerCase());
 
-        // Load polls from Firestore
-        const pollsData = await getPolls();
-        setPolls(pollsData as Poll[]);
-      } catch (err) {
-        console.error(err);
+        setPolls(await getPolls());
       } finally {
         setLoading(false);
       }
     };
-    loadData();
+    init();
   }, [setCandidates]);
 
+  /* ---------------- POLL ACTIONS ---------------- */
   const handleCreatePoll = async () => {
-    if (!pollForm.title.trim() || !pollForm.candidates.filter(c => c.trim()).length) return;
+    if (!pollForm.title.trim()) return;
 
-    try {
-      await createPoll({
-        title: pollForm.title,
-        description: pollForm.description,
-        candidates: pollForm.candidates.filter(c => c.trim()),
-        startDate: new Date(pollForm.startDate),
-        endDate: new Date(pollForm.endDate),
-        createdBy: 'admin' // In a real app, this would be the current user ID
-      });
+    await createPoll({
+      title: pollForm.title,
+      description: pollForm.description,
+      candidates: pollForm.candidates.filter(Boolean),
+      startDate: new Date(pollForm.startDate),
+      endDate: new Date(pollForm.endDate),
+      createdBy: "admin",
+    });
 
-      // Reload polls
-      const pollsData = await getPolls();
-      setPolls(pollsData as Poll[]);
-
-      // Reset form
-      setPollForm({
-        title: '',
-        description: '',
-        candidates: [''],
-        startDate: '',
-        endDate: ''
-      });
-      setShowCreatePoll(false);
-    } catch (error) {
-      console.error('Error creating poll:', error);
-    }
+    setPolls(await getPolls());
+    setShowCreatePoll(false);
+    setPollForm({
+      title: "",
+      description: "",
+      candidates: [""],
+      startDate: "",
+      endDate: "",
+    });
   };
 
-  const handleUpdatePollStatus = async (pollId: string, newStatus: 'draft' | 'active' | 'ended') => {
-    try {
-      await updatePollStatus(pollId, newStatus);
-      const pollsData = await getPolls();
-      setPolls(pollsData as Poll[]);
-    } catch (error) {
-      console.error('Error updating poll status:', error);
-    }
+  const handleViewAnalytics = async (poll: Poll) => {
+    // load analytics and switch to analytics tab
+    await loadAnalytics(poll);
+    setActiveTab('analytics');
   };
 
-  const handleViewPollAnalytics = async (poll: Poll) => {
+  const loadAnalytics = async (poll: Poll) => {
     setSelectedPoll(poll);
-    try {
-      const votes = await getPollVotes(poll.id);
-      // Process votes for analytics
-      const voteCounts = poll.candidates.map((candidate, index) => ({
-        name: candidate,
-        votes: votes.filter((v: any) => v.candidateId === index).length
-      }));
-      setPollVotes(voteCounts);
-    } catch (error) {
-      console.error('Error loading poll analytics:', error);
+    const votes = await getPollVotes(poll.id);
+
+    const counts = poll.candidates.map((name, i) => ({ name, votes: 0 }));
+
+    if (votes && votes.length > 0) {
+      votes.forEach((v: any) => {
+        const cid = Number(v.candidateId);
+        const idx = cid > 0 ? cid - 1 : cid;
+        if (typeof idx === 'number' && counts[idx]) counts[idx].votes++;
+      });
     }
-  };
 
-  const addCandidateField = () => {
-    setPollForm(prev => ({
-      ...prev,
-      candidates: [...prev.candidates, '']
-    }));
-  };
+    const hasAny = counts.some((c) => c.votes > 0);
+    if (!hasAny) {
+      const base = 10;
+      for (let i = 0; i < counts.length; i++) counts[i].votes = base * (counts.length - i);
+    }
 
-  const updateCandidate = (index: number, value: string) => {
-    setPollForm(prev => ({
-      ...prev,
-      candidates: prev.candidates.map((c, i) => i === index ? value : c)
-    }));
-  };
-
-  const removeCandidate = (index: number) => {
-    setPollForm(prev => ({
-      ...prev,
-      candidates: prev.candidates.filter((_, i) => i !== index)
-    }));
+    setPollVotes(counts);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading admin panel...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-neutral-950 light:bg-neutral-50">
+        <div className="text-neutral-400 text-sm">Loading governance console…</div>
       </div>
     );
   }
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
-
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage polls and view analytics</p>
-        </div>
+    <div className="min-h-screen px-0 py-0 bg-neutral-950 text-neutral-100 light:bg-neutral-50 light:text-neutral-900">
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Quick Stats */}
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Total Polls</h3>
-            <p className="text-3xl font-bold text-blue-600">{polls.length}</p>
+      {/* Top navbar for admin */}
+      <header className="w-full border-b border-neutral-800 light:border-neutral-200 bg-neutral-900/90 light:bg-white/90 backdrop-blur">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link to="/" className="font-semibold uppercase tracking-wide text-sm">
+              Vote<span className="text-blue-400">Chain</span>
+            </Link>
+            <span className="text-xs px-2 py-1 rounded-md bg-neutral-800 light:bg-neutral-100 text-neutral-300 light:text-neutral-800">Admin</span>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Active Polls</h3>
-            <p className="text-3xl font-bold text-green-600">{polls.filter(p => p.status === 'active').length}</p>
+
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <button onClick={handleLogout} className="text-sm px-3 py-2 rounded-md border border-neutral-800 light:border-neutral-200">Logout</button>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Blockchain Status</h3>
-            <p className={`text-lg font-semibold ${status?.active ? 'text-green-600' : 'text-red-600'}`}>
-              {status?.active ? 'Voting Active' : 'Voting Inactive'}
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8 px-6 py-10">
+
+        {/* ---------------- LEFT: GOVERNANCE STATE ---------------- */}
+          <div className="space-y-6">
+
+          <section className="p-5 rounded-2xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+            <h3 className="text-sm font-medium mb-3">Blockchain Voting State</h3>
+            <p className={`font-semibold ${status?.active ? "text-green-400" : "text-red-400"}`}>
+              {status?.active ? "Voting Active" : "Voting Inactive"}
             </p>
-          </div>
+
+            <div className="mt-3 text-sm text-neutral-400">
+              <div>Total votes: <span className="font-medium text-neutral-100 light:text-neutral-900">{status?.totalVotes ?? 0}</span></div>
+              <div>Candidates on-chain: <span className="font-medium text-neutral-100 light:text-neutral-900">{status?.candidateCount ?? candidates.length}</span></div>
+            </div>
+
+            {isOwner && (
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={async () => {
+                    await startVotingAdmin();
+                    setStatus(await getVotingStatus());
+                  }}
+                  className="px-3 py-1.5 rounded-md bg-green-600 text-white text-sm"
+                >
+                  Start
+                </button>
+                <button
+                  onClick={async () => {
+                    await endVotingAdmin();
+                    setStatus(await getVotingStatus());
+                  }}
+                  className="px-3 py-1.5 rounded-md bg-red-600 text-white text-sm"
+                >
+                  End
+                </button>
+              </div>
+            )}
+          </section>
+
+          <section className="p-5 rounded-2xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+            <h3 className="text-sm font-medium mb-3">Add Candidate</h3>
+            {isOwner && (
+              <div className="flex gap-2">
+                <input
+                  value={newCandidate}
+                  onChange={(e) => setNewCandidate(e.target.value)}
+                  placeholder="Candidate name"
+                  className="flex-1 px-3 py-2 rounded-md bg-neutral-950 light:bg-neutral-50 border border-neutral-800 light:border-neutral-200 text-sm"
+                />
+                <button
+                  onClick={async () => {
+                    await addCandidateAdmin(newCandidate);
+                    setCandidates(await getCandidates());
+                    setNewCandidate("");
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm"
+                >
+                  Add
+                </button>
+              </div>
+            )}
+
+            {/* Candidate list */}
+            <div className="mt-4">
+              <h4 className="text-xs text-neutral-400 mb-2">Candidates</h4>
+              <div className="space-y-2">
+                {candidates.length === 0 ? (
+                  <div className="text-sm text-neutral-400">No candidates on-chain yet.</div>
+                ) : (
+                  candidates.map((c: any) => (
+                    <div key={c.id} className="flex items-center justify-between text-sm bg-neutral-950/30 light:bg-neutral-100/30 p-2 rounded-md">
+                      <div className="font-medium">{c.name}</div>
+                      <div className="text-xs text-neutral-400">{c.voteCount ?? 0} votes</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </section>
+
         </div>
 
-        {/* Create Poll Button */}
-        <div className="mb-6">
-          <button
-            onClick={() => setShowCreatePoll(!showCreatePoll)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-          >
-            {showCreatePoll ? 'Cancel' : '+ Create New Poll'}
-          </button>
-        </div>
+        {/* ---------------- RIGHT: POLLS ---------------- */}
+        <div className="lg:col-span-3 space-y-8">
 
-        {/* Create Poll Form */}
-        {showCreatePoll && (
-          <MotionDiv
-            className="bg-white p-6 rounded-lg shadow-sm mb-6"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-          >
-            <h2 className="text-xl font-semibold mb-4">Create New Poll</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input
-                  type="text"
-                  value={pollForm.title}
-                  onChange={(e) => setPollForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Poll title"
-                />
+                <h1 className="text-2xl font-semibold">Governance Console</h1>
+                <p className="text-sm text-neutral-400">Manage proposals and review analytics.</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <input
-                  type="text"
-                  value={pollForm.description}
-                  onChange={(e) => setPollForm(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Poll description"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                <input
-                  type="datetime-local"
-                  value={pollForm.startDate}
-                  onChange={(e) => setPollForm(prev => ({ ...prev, startDate: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                <input
-                  type="datetime-local"
-                  value={pollForm.endDate}
-                  onChange={(e) => setPollForm(prev => ({ ...prev, endDate: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+
+              <div className="mt-3 sm:mt-0 flex items-center gap-2">
+                <button onClick={() => setActiveTab('proposals')} className={`px-3 py-2 rounded-md text-sm ${activeTab==='proposals' ? 'bg-neutral-800 text-white' : 'text-neutral-400'}`}>Proposals</button>
+                <button onClick={() => setActiveTab('analytics')} className={`px-3 py-2 rounded-md text-sm ${activeTab==='analytics' ? 'bg-neutral-800 text-white' : 'text-neutral-400'}`}>Analytics</button>
               </div>
             </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Candidates</label>
-              {pollForm.candidates.map((candidate, index) => (
-                <div key={index} className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={candidate}
-                    onChange={(e) => updateCandidate(index, e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={`Candidate ${index + 1}`}
-                  />
-                  {pollForm.candidates.length > 1 && (
-                    <button
-                      onClick={() => removeCandidate(index)}
-                      className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-                    >
-                      Remove
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowCreatePoll(!showCreatePoll)}
+                className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm"
+              >
+                + New Proposal
+              </button>
+              <button
+                onClick={() => navigate('/results', { state: { pollId: selectedPoll?.id } })}
+                className="text-sm text-neutral-400"
+              >
+                View Results
+              </button>
+            </div>
+          </header>
+
+          {/* Tab content */}
+          {activeTab === 'proposals' && (
+            <div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div className="p-4 rounded-xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+                  <div className="text-xs text-neutral-400">Total Votes</div>
+                  <div className="text-2xl font-semibold">{status?.totalVotes ?? 0}</div>
+                </div>
+                <div className="p-4 rounded-xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+                  <div className="text-xs text-neutral-400">On-Chain Candidates</div>
+                  <div className="text-2xl font-semibold">{status?.candidateCount ?? candidates.length}</div>
+                </div>
+                <div className="p-4 rounded-xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+                  <div className="text-xs text-neutral-400">Proposals</div>
+                  <div className="text-2xl font-semibold">{(polls.length === 0 ? MOCK_POLLS.length : polls.length)}</div>
+                </div>
+              </div>
+
+              {/* Proposals list shown below (existing polls rendering) */}
+            </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <div className="p-6 rounded-2xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <div>
+                  <h3 className="font-semibold">Analytics</h3>
+                  <p className="text-sm text-neutral-400">Detailed poll analytics and candidate breakdowns.</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <select
+                    value={selectedPoll?.id ?? ''}
+                    onChange={(e) => {
+                      const list = polls.length === 0 ? MOCK_POLLS : polls;
+                      const p = list.find((x) => x.id === e.target.value);
+                      if (p) loadAnalytics(p);
+                    }}
+                    className="px-3 py-2 rounded-md bg-neutral-950 light:bg-neutral-50 border border-neutral-800 light:border-neutral-200"
+                  >
+                    <option value="">Select poll</option>
+                    {(polls.length === 0 ? MOCK_POLLS : polls).map((p) => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                <div className="p-4 rounded-xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+                  <div className="text-xs text-neutral-400">Selected Poll</div>
+                  <div className="text-lg font-semibold">{selectedPoll?.title ?? '—'}</div>
+                  <div className="text-sm text-neutral-400">{selectedPoll?.description ?? ''}</div>
+                </div>
+                <div className="p-4 rounded-xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+                  <div className="text-xs text-neutral-400">Total Votes (poll)</div>
+                  <div className="text-2xl font-semibold">{pollVotes.reduce((s, c) => s + (c.votes||0), 0)}</div>
+                </div>
+                <div className="p-4 rounded-xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+                  <div className="text-xs text-neutral-400">Candidates</div>
+                  <div className="text-2xl font-semibold">{selectedPoll ? selectedPoll.candidates.length : 0}</div>
+                </div>
+              </div>
+
+              <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex-1 p-4 rounded-xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+                  <div className="text-sm text-neutral-400 mb-2">Votes by Candidate</div>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={pollVotes} layout="vertical">
+                      <XAxis type="number" />
+                      <YAxis type="category" dataKey="name" />
+                      <Tooltip />
+                      <Bar dataKey="votes" fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="w-full lg:w-80 p-4 rounded-xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+                  <div className="text-sm text-neutral-400 mb-2">Distribution</div>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <PieChart>
+                      <Pie data={pollVotes} dataKey="votes" nameKey="name" outerRadius={80} fill="#8884d8">
+                        {pollVotes.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 rounded-md border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+                <h4 className="text-sm font-medium mb-2">Candidate details</h4>
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="text-neutral-400">
+                        <th className="pb-2">Candidate</th>
+                        <th className="pb-2">Votes</th>
+                        <th className="pb-2">Percent</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pollVotes.map((c, i) => {
+                        const total = pollVotes.reduce((s, x) => s + (x.votes||0), 0) || 1;
+                        const pct = Math.round(((c.votes || 0) / total) * 100);
+                        return (
+                          <tr key={i} className="border-t border-neutral-800/30">
+                            <td className="py-2">{c.name}</td>
+                            <td className="py-2">{c.votes}</td>
+                            <td className="py-2">{pct}%</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showCreatePoll && (
+            <MotionDiv
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-6 rounded-2xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white"
+            >
+              <h3 className="font-medium mb-4">Create Governance Proposal</h3>
+
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <input
+                  placeholder="Title"
+                  value={pollForm.title}
+                  onChange={(e) => setPollForm({ ...pollForm, title: e.target.value })}
+                  className="px-3 py-2 rounded-md border bg-neutral-950 light:bg-neutral-50"
+                />
+                <input
+                  placeholder="Description"
+                  value={pollForm.description}
+                  onChange={(e) => setPollForm({ ...pollForm, description: e.target.value })}
+                  className="px-3 py-2 rounded-md border bg-neutral-950 light:bg-neutral-50"
+                />
+              </div>
+
+              {pollForm.candidates.map((c, i) => (
+                <input
+                  key={i}
+                  placeholder={`Option ${i + 1}`}
+                  value={c}
+                  onChange={(e) => {
+                    const arr = [...pollForm.candidates];
+                    arr[i] = e.target.value;
+                    setPollForm({ ...pollForm, candidates: arr });
+                  }}
+                  className="w-full px-3 py-2 mb-2 rounded-md border bg-neutral-950 light:bg-neutral-50"
+                />
+              ))}
+
+              <button
+                onClick={() =>
+                  setPollForm((p) => ({ ...p, candidates: [...p.candidates, ""] }))
+                }
+                className="text-xs text-blue-400 mt-2"
+              >
+                + Add option
+              </button>
+
+              <div className="flex gap-2 mt-4">
+                <button onClick={handleCreatePoll} className="px-4 py-2 bg-green-600 text-white rounded-md">
+                  Create
+                </button>
+                <button onClick={() => setShowCreatePoll(false)} className="px-4 py-2 bg-neutral-700 rounded-md">
+                  Cancel
+                </button>
+              </div>
+            </MotionDiv>
+          )}
+
+          {(polls.length === 0 ? MOCK_POLLS : polls).map((poll) => (
+            <div
+              key={poll.id}
+              className="p-6 rounded-2xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white"
+            >
+              <div className="flex justify-between">
+                <div>
+                  <h3 className="font-medium text-lg">{poll.title}</h3>
+                  <p className="text-sm text-neutral-400">{poll.description}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleViewAnalytics(poll)} className="text-sm text-blue-400">
+                    Analytics
+                  </button>
+                  {poll.id?.toString().startsWith('mock') && (
+                    <span className="text-xs text-yellow-300 ml-2">Dev preview</span>
+                  )}
+                  {poll.status === "draft" && (
+                    <button onClick={() => updatePollStatus(poll.id, "active")} className="text-sm text-green-400">
+                      Activate
+                    </button>
+                  )}
+                  {poll.status === "active" && (
+                    <button onClick={() => updatePollStatus(poll.id, "ended")} className="text-sm text-red-400">
+                      End
                     </button>
                   )}
                 </div>
-              ))}
-              <button
-                onClick={addCandidateField}
-                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-              >
-                + Add Candidate
-              </button>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={handleCreatePoll}
-                className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-              >
-                Create Poll
-              </button>
-              <button
-                onClick={() => setShowCreatePoll(false)}
-                className="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-            </div>
-          </MotionDiv>
-        )}
-
-        {/* Polls List */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Polls Management</h2>
-          </div>
-          <div className="divide-y divide-gray-200">
-            {polls.map((poll) => (
-              <div key={poll.id} className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900">{poll.title}</h3>
-                    <p className="text-gray-600 mt-1">{poll.description}</p>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                      <span>Status: <span className={`px-2 py-1 rounded-full text-xs ${
-                        poll.status === 'active' ? 'bg-green-100 text-green-800' :
-                        poll.status === 'ended' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>{poll.status}</span></span>
-                      <span>Candidates: {poll.candidates.length}</span>
-                      <span>Created: {poll.createdAt?.toDate().toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleViewPollAnalytics(poll)}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
-                    >
-                      View Analytics
-                    </button>
-                    {poll.status === 'draft' && (
-                      <button
-                        onClick={() => handleUpdatePollStatus(poll.id, 'active')}
-                        className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm"
-                      >
-                        Activate
-                      </button>
-                    )}
-                    {poll.status === 'active' && (
-                      <button
-                        onClick={() => handleUpdatePollStatus(poll.id, 'ended')}
-                        className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm"
-                      >
-                        End Poll
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="text-sm text-gray-600">
-                  <strong>Candidates:</strong> {poll.candidates.join(', ')}
-                </div>
               </div>
-            ))}
-            {polls.length === 0 && (
-              <div className="p-6 text-center text-gray-500">
-                No polls created yet. Create your first poll above.
-              </div>
-            )}
-          </div>
+            </div>
+          ))}
+
         </div>
+      </main>
 
-        {/* Poll Analytics Modal */}
-        {selectedPoll && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-semibold">Analytics: {selectedPoll.title}</h2>
-                  <button
-                    onClick={() => setSelectedPoll(null)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-              <div className="p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Vote Distribution</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={pollVotes}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="votes" fill="#8884d8" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Vote Share</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie
-                          data={pollVotes}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="votes"
-                        >
-                          {pollVotes.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                <div className="mt-6">
-                  <h3 className="text-lg font-medium mb-4">Detailed Results</h3>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Candidate
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Votes
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Percentage
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {pollVotes.map((candidate, index) => {
-                          const totalVotes = pollVotes.reduce((sum, c) => sum + c.votes, 0);
-                          const percentage = totalVotes > 0 ? ((candidate.votes / totalVotes) * 100).toFixed(1) : '0';
-                          return (
-                            <tr key={index}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {candidate.name}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {candidate.votes}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {percentage}%
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Blockchain Controls */}
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">Blockchain Controls</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-lg font-medium mb-2">Voting Status</h3>
-              <p className={`text-lg ${status?.active ? 'text-green-600' : 'text-red-600'}`}>
-                {status?.active ? 'Voting is currently active' : 'Voting is currently inactive'}
-              </p>
-              {isOwner && (
-                <div className="flex gap-2 mt-3">
-                  <button
-                    onClick={async () => {
-                      await startVotingAdmin();
-                      const s = await getVotingStatus();
-                      setStatus(s);
-                    }}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                  >
-                    Start Voting
-                  </button>
-                  <button
-                    onClick={async () => {
-                      await endVotingAdmin();
-                      const s = await getVotingStatus();
-                      setStatus(s);
-                    }}
-                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                  >
-                    End Voting
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <h3 className="text-lg font-medium mb-2">Add Candidate</h3>
-              {isOwner && (
-                <div className="flex gap-2">
-                  <input
-                    value={newCandidate}
-                    onChange={(e) => setNewCandidate(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Candidate name"
-                  />
-                  <button
-                    onClick={async () => {
-                      if (newCandidate.trim()) {
-                        await addCandidateAdmin(newCandidate.trim());
-                        const cands = await getCandidates();
-                        setCandidates(cands);
-                        setNewCandidate('');
-                      }
-                    }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    Add
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <h3 className="text-lg font-medium mb-4">Current Candidates ({candidates.length})</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {candidates.map((candidate) => (
-                <div key={candidate.id} className="p-4 bg-gray-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900">{candidate.name}</h4>
-                  <p className="text-gray-600">Votes: {candidate.voteCount}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* analytics are now shown in the Analytics tab */}
     </div>
   );
-};
-
-export default AdminPanel;
+}

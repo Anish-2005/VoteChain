@@ -4,7 +4,7 @@ import { useVotingStore } from "./store/useVotingStore";
 import { getCandidates, connectWallet } from "./utils/blockchain";
 import { getPolls, getPollVotes, Poll } from "./firebase";
 import { BarChart3, Users, Calendar } from "lucide-react";
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 interface PollResult {
   poll: Poll;
@@ -44,11 +44,20 @@ const Results = () => {
         for (const poll of endedPolls) {
           const votes = await getPollVotes(poll.id);
 
-          const voteCounts = poll.candidates.map((candidate, index) => ({
+          const voteCounts = poll.candidates.map((candidate) => ({
             name: candidate,
-            votes: votes.filter((v: any) => v.candidateId === index).length,
+            votes: 0,
             percentage: 0,
           }));
+
+          // normalize and count votes; support 1-based candidateId storage
+          votes.forEach((v: any) => {
+            const cid = Number(v.candidateId);
+            const idx = cid > 0 ? cid - 1 : cid; // if stored 1-based, convert to index
+            if (typeof idx === 'number' && idx >= 0 && idx < voteCounts.length) {
+              voteCounts[idx].votes++;
+            }
+          });
 
           const totalVotes = voteCounts.reduce((s, c) => s + c.votes, 0);
           voteCounts.forEach((c) => {
@@ -89,6 +98,9 @@ const Results = () => {
         }
 
         setPollResults(results);
+        // If a pollId was provided via navigation state or query, try to focus it
+        const loc = (window as any).__initialLocation || null;
+        // we will check location from react-router
       } catch (err: any) {
         const msg = err?.message || String(err) || 'Unknown error.';
         setError(`Failed to load results. ${msg}`);
@@ -96,12 +108,28 @@ const Results = () => {
         setLoading(false);
       }
     };
-
     // expose loader on retry
     (window as any).__loadResults = loadResults;
 
     loadResults();
   }, [setCandidates]);
+
+  // detect incoming selected poll id from navigation state or query string
+  const location = useLocation();
+  const incomingPollId = (location.state as any)?.pollId || new URLSearchParams(location.search).get('pollId');
+
+  useEffect(() => {
+    if (!incomingPollId) return;
+    // when pollResults are loaded, if incomingPollId exists, reorder so that poll appears first
+    if (pollResults.length === 0) return;
+    const idx = pollResults.findIndex(r => r.poll.id === incomingPollId);
+    if (idx > 0) {
+      const copy = [...pollResults];
+      const [item] = copy.splice(idx, 1);
+      copy.unshift(item);
+      setPollResults(copy);
+    }
+  }, [incomingPollId, pollResults]);
 
   /* ---------------- LOADING ---------------- */
   if (loading) {
