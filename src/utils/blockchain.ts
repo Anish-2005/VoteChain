@@ -15,9 +15,45 @@ export const connectWallet = async () => {
     // Check if we're on the correct network
     const network = await provider.getNetwork();
     console.log("Connected to network:", network.name, "Chain ID:", network.chainId);
+    // Accept either bigint or number chainId; attempt to switch to local network if not present
+    const currentChainId = typeof network.chainId === 'bigint' ? network.chainId : BigInt(network.chainId);
+    const requiredChainId = 1337n;
 
-    if (network.chainId !== 1337n) {
-      throw new Error(`Please connect to the local Hardhat network (Chain ID: 1337). Current network: ${network.name} (Chain ID: ${network.chainId})`);
+    if (currentChainId !== requiredChainId) {
+      // Try to request the wallet to switch networks. If the chain is not added, attempt to add it.
+      try {
+        await (window as any).ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x539' }], // 1337 hex
+        });
+
+        // re-create provider with updated network
+        provider = new ethers.BrowserProvider(window.ethereum);
+        const newNetwork = await provider.getNetwork();
+        console.log('Switched network to:', newNetwork.name, 'Chain ID:', newNetwork.chainId);
+      } catch (switchError: any) {
+        // error code 4902 indicates the chain is not added to MetaMask
+        if (switchError && (switchError.code === 4902 || switchError.message?.includes('Unrecognized chain ID') )) {
+          try {
+            await addLocalNetwork();
+            // try switching again
+            await (window as any).ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: '0x539' }],
+            });
+
+            provider = new ethers.BrowserProvider(window.ethereum);
+            const newNetwork = await provider.getNetwork();
+            console.log('Added and switched to local network:', newNetwork.name, 'Chain ID:', newNetwork.chainId);
+          } catch (addErr) {
+            console.error('Failed to add/switch to local network:', addErr);
+            throw new Error(`Please switch MetaMask to the local Hardhat network (Chain ID: 1337). Current network: ${network.name} (Chain ID: ${network.chainId})`);
+          }
+        } else {
+          console.error('Failed to switch network:', switchError);
+          throw new Error(`Please switch MetaMask to the local Hardhat network (Chain ID: 1337). Current network: ${network.name} (Chain ID: ${network.chainId})`);
+        }
+      }
     }
 
     await provider.send("eth_requestAccounts", []);

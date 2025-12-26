@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { useVotingStore } from './store/useVotingStore';
-import { getCandidates, connectWallet } from './utils/blockchain';
-import { getPolls, getPollVotes, Poll } from './firebase';
-import { BarChart3, Users, Calendar } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { useVotingStore } from "./store/useVotingStore";
+import { getCandidates, connectWallet } from "./utils/blockchain";
+import { getPolls, getPollVotes, Poll } from "./firebase";
+import { BarChart3, Users, Calendar } from "lucide-react";
+import { Link } from 'react-router-dom';
 
 interface PollResult {
   poll: Poll;
@@ -12,8 +13,8 @@ interface PollResult {
   totalVotes: number;
 }
 
-const MotionH2 = motion.h2 as any;
-const MotionDiv = motion.div as any;
+const MotionDiv = motion.div;
+const MotionH2 = motion.h2;
 
 const Results = () => {
   const { candidates, setCandidates } = useVotingStore();
@@ -27,218 +28,280 @@ const Results = () => {
         setLoading(true);
         setError(null);
 
-        // Connect to wallet for blockchain data
-        await connectWallet();
-        const cands = await getCandidates();
-        setCandidates(cands);
+        // Try to load on-chain candidate snapshot, but do not require wallet connection
+        try {
+          const cands = await getCandidates();
+          setCandidates(cands);
+        } catch (e) {
+          console.warn('Could not load on-chain candidates:', e);
+        }
 
-        // Load polls from Firestore
         const polls = await getPolls();
         const endedPolls = polls.filter((p: Poll) => p.status === 'ended');
 
-        // Load vote data for each ended poll
         const results: PollResult[] = [];
+
         for (const poll of endedPolls) {
           const votes = await getPollVotes(poll.id);
+
           const voteCounts = poll.candidates.map((candidate, index) => ({
             name: candidate,
             votes: votes.filter((v: any) => v.candidateId === index).length,
-            percentage: 0
+            percentage: 0,
           }));
 
-          const totalVotes = voteCounts.reduce((sum, c) => sum + c.votes, 0);
-          voteCounts.forEach(c => {
-            c.percentage = totalVotes > 0 ? (c.votes / totalVotes) * 100 : 0;
+          const totalVotes = voteCounts.reduce((s, c) => s + c.votes, 0);
+          voteCounts.forEach((c) => {
+            c.percentage = totalVotes ? (c.votes / totalVotes) * 100 : 0;
           });
 
-          results.push({
-            poll,
-            votes,
-            voteCounts,
-            totalVotes
-          });
+          results.push({ poll, votes, voteCounts, totalVotes });
+        }
+
+        if (results.length === 0) {
+          // Provide demo/sample results to show UI when no real results exist
+          const samplePoll: any = {
+            id: 'sample-1',
+            title: 'Sample: Favorite Programming Language',
+            description: 'Demo results to illustrate the results view.',
+            candidates: ['JavaScript', 'Python', 'Rust', 'Go'],
+            status: 'ended',
+            endDate: { toDate: () => new Date() } as any,
+          };
+
+          const sampleVotes = [
+            { candidateId: 0 },
+            { candidateId: 0 },
+            { candidateId: 1 },
+            { candidateId: 2 },
+            { candidateId: 0 },
+          ];
+
+          const voteCounts = samplePoll.candidates.map((candidate: string, index: number) => ({
+            name: candidate,
+            votes: sampleVotes.filter((v: any) => v.candidateId === index).length,
+            percentage: 0,
+          }));
+          const totalVotes = voteCounts.reduce((s: number, c: any) => s + c.votes, 0);
+          voteCounts.forEach((c: any) => (c.percentage = totalVotes ? (c.votes / totalVotes) * 100 : 0));
+
+          results.push({ poll: samplePoll, votes: sampleVotes, voteCounts, totalVotes });
         }
 
         setPollResults(results);
       } catch (err: any) {
-        console.error('Error loading results:', err);
-        let errorMessage = 'Failed to load results. ';
-
-        if (err.message?.includes('Chain ID: 1337')) {
-          errorMessage += 'Please connect MetaMask to the local Hardhat network (localhost:8545, Chain ID: 1337).';
-        } else if (err.message?.includes('Please install MetaMask')) {
-          errorMessage += 'Please install MetaMask browser extension.';
-        } else if (err.message?.includes('decode result data')) {
-          errorMessage += 'Blockchain connection issue. Please ensure Hardhat node is running and MetaMask is connected to localhost:8545.';
-        } else {
-          errorMessage += err.message || 'Unknown error occurred.';
-        }
-
-        setError(errorMessage);
+        const msg = err?.message || String(err) || 'Unknown error.';
+        setError(`Failed to load results. ${msg}`);
       } finally {
         setLoading(false);
       }
     };
+
+    // expose loader on retry
+    (window as any).__loadResults = loadResults;
+
     loadResults();
   }, [setCandidates]);
 
+  /* ---------------- LOADING ---------------- */
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading voting results...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-neutral-950 light:bg-neutral-50">
+        <div className="text-sm text-neutral-400">Loading governance results…</div>
       </div>
     );
   }
 
+  /* ---------------- ERROR ---------------- */
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="p-6 bg-red-50 border border-red-200 text-red-700 rounded-lg max-w-md">
-            <h3 className="font-semibold mb-2">Error Loading Results</h3>
-            <p>{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Retry
-            </button>
-          </div>
+      <div className="min-h-screen flex items-center justify-center bg-neutral-950 light:bg-neutral-50 px-6">
+        <div className="max-w-md p-6 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400">
+          <h3 className="font-semibold mb-2">Error loading results</h3>
+          <p className="text-sm">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 rounded-md bg-red-600 text-white text-sm"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
+    <div
+      className="
+        min-h-screen px-6 py-12
+        bg-neutral-950 text-neutral-100
+        light:bg-neutral-50 light:text-neutral-900
+      "
+    >
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-6 text-left">
+          <Link to="/" className="text-sm text-neutral-400 light:text-neutral-600 hover:text-neutral-200 light:hover:text-neutral-900">← Back</Link>
+        </div>
+
         <MotionH2
-          className="text-3xl font-bold text-gray-900 mb-6 text-center"
-          initial={{ opacity: 0, y: -30 }}
+          className="text-3xl font-semibold mb-10 text-center"
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: "easeOut" }}
         >
-          Election Results
+          Governance Results
         </MotionH2>
 
-        {pollResults.length === 0 ? (
-          <div className="text-center p-8 bg-white rounded-lg shadow-sm">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Completed Elections</h3>
-            <p className="text-gray-600">Results will appear here once polls are completed.</p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {pollResults.map((result, pollIndex) => (
-              <MotionDiv
-                key={result.poll.id}
-                className="bg-white rounded-lg shadow-sm overflow-hidden"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: pollIndex * 0.1 }}
-              >
-                <div className="p-6 border-b border-gray-200">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{result.poll.title}</h3>
-                  <p className="text-gray-600 mb-4">{result.poll.description}</p>
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <BarChart3 className="w-4 h-4" />
-                      {result.totalVotes} total votes
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="w-4 h-4" />
-                      {result.poll.candidates.length} candidates
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      Ended: {result.poll.endDate.toDate().toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  <div className="space-y-4">
-                    {result.voteCounts
-                      .sort((a, b) => b.votes - a.votes)
-                      .map((candidate, index) => (
-                      <MotionDiv
-                        key={candidate.name}
-                        className="p-4 bg-gray-50 rounded-lg"
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.5, delay: index * 0.1 }}
-                      >
-                        <div className="flex justify-between items-center mb-3">
-                          <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                              index === 0 ? 'bg-yellow-100 text-yellow-800' :
-                              index === 1 ? 'bg-gray-100 text-gray-800' :
-                              index === 2 ? 'bg-orange-100 text-orange-800' :
-                              'bg-blue-100 text-blue-800'
-                            }`}>
-                              {index + 1}
-                            </span>
-                            <h4 className="text-lg font-semibold text-gray-900">{candidate.name}</h4>
-                          </div>
-                          <div className="text-right">
-                            <span className="text-2xl font-bold text-gray-900">{candidate.votes}</span>
-                            <span className="text-sm text-gray-500 ml-1">votes</span>
-                          </div>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
-                          <MotionDiv
-                            className={`h-3 rounded-full ${
-                              index === 0 ? 'bg-yellow-500' :
-                              index === 1 ? 'bg-gray-500' :
-                              index === 2 ? 'bg-orange-500' :
-                              'bg-blue-500'
-                            }`}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${candidate.percentage}%` }}
-                            transition={{ duration: 1, delay: 0.5 + index * 0.1 }}
-                          ></MotionDiv>
-                        </div>
-                        <p className="text-right text-sm text-gray-600">
-                          {candidate.percentage.toFixed(1)}% of total votes
-                        </p>
-                      </MotionDiv>
-                    ))}
-                  </div>
-
-                  {result.totalVotes === 0 && (
-                    <div className="text-center mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-yellow-800 font-medium">No votes were cast in this election.</p>
-                    </div>
-                  )}
-                </div>
-              </MotionDiv>
-            ))}
+        {/* ---------------- NO RESULTS ---------------- */}
+        {pollResults.length === 0 && (
+          <div className="
+            text-center p-10 rounded-2xl
+            border border-neutral-800 light:border-neutral-200
+            bg-neutral-900 light:bg-white
+          ">
+            <p className="text-neutral-400 light:text-neutral-600">
+              No completed governance proposals yet.
+            </p>
           </div>
         )}
 
-        {/* Blockchain Results Section */}
+        {/* ---------------- POLL RESULTS ---------------- */}
+        <div className="space-y-10">
+          {pollResults.map((result, pollIndex) => (
+            <MotionDiv
+              key={result.poll.id}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: pollIndex * 0.1 }}
+              className="
+                rounded-2xl overflow-hidden
+                border border-neutral-800 light:border-neutral-200
+                bg-neutral-900 light:bg-white
+              "
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-neutral-800 light:border-neutral-200">
+                <h3 className="text-2xl font-semibold mb-2">
+                  {result.poll.title}
+                </h3>
+                <p className="text-sm text-neutral-400 light:text-neutral-600 mb-4">
+                  {result.poll.description}
+                </p>
+
+                <div className="flex flex-wrap gap-4 text-xs text-neutral-400 light:text-neutral-600">
+                  <span className="flex items-center gap-1">
+                    <BarChart3 className="w-4 h-4" />
+                    {result.totalVotes} votes
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Users className="w-4 h-4" />
+                    {result.poll.candidates.length} candidates
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
+                    Ended {result.poll.endDate.toDate().toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Results */}
+              <div className="p-6 space-y-4">
+                {result.voteCounts
+                  .sort((a, b) => b.votes - a.votes)
+                  .map((candidate, index) => (
+                    <MotionDiv
+                      key={candidate.name}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="
+                        p-4 rounded-xl
+                        border border-neutral-800 light:border-neutral-200
+                        bg-neutral-950 light:bg-neutral-50
+                      "
+                    >
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-3">
+                          <span className="
+                            w-7 h-7 rounded-full
+                            flex items-center justify-center
+                            text-xs font-semibold
+                            bg-blue-600/20 text-blue-400
+                          ">
+                            {index + 1}
+                          </span>
+                          <span className="font-medium">{candidate.name}</span>
+                        </div>
+
+                        <span className="text-sm text-neutral-400">
+                          {candidate.votes} votes
+                        </span>
+                      </div>
+
+                      {/* Bar */}
+                      <div className="h-1.5 w-full bg-neutral-800 light:bg-neutral-200 rounded-full overflow-hidden">
+                        <MotionDiv
+                          initial={{ width: 0 }}
+                          animate={{ width: `${candidate.percentage}%` }}
+                          transition={{ duration: 0.8 }}
+                          className="h-full bg-blue-500"
+                        />
+                      </div>
+
+                      <div className="text-right text-xs text-neutral-500 mt-1">
+                        {candidate.percentage.toFixed(1)}%
+                      </div>
+                    </MotionDiv>
+                  ))}
+
+                {result.totalVotes === 0 && (
+                  <div className="
+                    mt-4 p-4 rounded-lg
+                    bg-yellow-500/10 border border-yellow-500/30
+                    text-yellow-500 text-sm text-center
+                  ">
+                    No votes were cast for this proposal.
+                  </div>
+                )}
+              </div>
+            </MotionDiv>
+          ))}
+        </div>
+
+        {/* ---------------- BLOCKCHAIN DATA ---------------- */}
         {candidates.length > 0 && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Live Blockchain Data</h2>
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-xl font-semibold mb-4">Current Blockchain Candidates</h3>
+          <div className="mt-16">
+            <h3 className="text-xl font-semibold mb-6 text-center">
+              Live Blockchain Snapshot
+            </h3>
+
+            <div
+              className="
+                p-6 rounded-2xl
+                border border-neutral-800 light:border-neutral-200
+                bg-neutral-900 light:bg-white
+              "
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {candidates.map((candidate) => (
-                  <div key={candidate.id} className="p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-semibold text-gray-900">{candidate.name}</h4>
-                    <p className="text-gray-600">Blockchain Votes: {candidate.voteCount}</p>
+                {candidates.map((c) => (
+                  <div
+                    key={c.id}
+                    className="
+                      p-4 rounded-lg
+                      bg-neutral-950 light:bg-neutral-50
+                      border border-neutral-800 light:border-neutral-200
+                    "
+                  >
+                    <div className="font-medium">{c.name}</div>
+                    <div className="text-sm text-neutral-400">
+                      On-chain votes: {c.voteCount}
+                    </div>
                   </div>
                 ))}
               </div>
-              <p className="text-sm text-gray-500 mt-4">
-                Note: Blockchain data shows real-time voting activity. Poll results above show finalized election data.
+
+              <p className="text-xs text-neutral-500 mt-4">
+                On-chain data reflects real-time activity. Results above show
+                finalized governance outcomes.
               </p>
             </div>
           </div>

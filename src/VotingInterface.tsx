@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import ThemeToggle from "./components/ThemeToggle";
 
 import { useVotingStore } from "./store/useVotingStore";
+import { ethers } from 'ethers';
 import { connectWallet, getCandidates, vote, hasVoted } from "./utils/blockchain";
 import {
   getActivePoll,
@@ -57,9 +58,7 @@ const VotingInterface = () => {
     setLoading(true);
     try {
       await connectWallet();
-      const provider = new (window as any).ethers.BrowserProvider(
-        (window as any).ethereum
-      );
+      const provider = new ethers.BrowserProvider((window as any).ethereum);
       const signer = await provider.getSigner();
       const address = await signer.getAddress();
 
