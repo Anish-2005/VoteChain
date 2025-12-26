@@ -1,284 +1,292 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useVotingStore } from './store/useVotingStore';
-import { connectWallet, getCandidates, vote, hasVoted } from './utils/blockchain';
-import { getActivePoll, recordVote, getUserVotes, Poll } from './firebase';
-import { getCurrentUser } from './firebase';
-import { Users, Calendar } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import ThemeToggle from "./components/ThemeToggle";
 
-const MotionH2 = motion.h2 as any;
-const MotionButton = motion.button as any;
-const MotionDiv = motion.div as any;
+import { useVotingStore } from "./store/useVotingStore";
+import { connectWallet, getCandidates, vote, hasVoted } from "./utils/blockchain";
+import {
+  getActivePoll,
+  recordVote,
+  getUserVotes,
+  Poll,
+} from "./firebase";
+import { getCurrentUser } from "./firebase";
+
+const MotionDiv = motion.div;
+const MotionButton = motion.button;
 
 const VotingInterface = () => {
-  const { setCandidates, setHasVoted } = useVotingStore();
+  const { candidates, setCandidates, setHasVoted } = useVotingStore();
+
+  const [activePoll, setActivePoll] = useState<Poll | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<number | null>(null);
   const [walletConnected, setWalletConnected] = useState(false);
+  const [userAddress, setUserAddress] = useState("");
+  const [userHasVoted, setUserHasVoted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [userAddress, setUserAddress] = useState<string>('');
-  const [activePoll, setActivePoll] = useState<Poll | null>(null);
-  const [userHasVoted, setUserHasVoted] = useState(false);
 
+  /* ---------------- LOAD POLL ---------------- */
   useEffect(() => {
-    const loadActivePoll = async () => {
-      try {
-        const poll = await getActivePoll();
-        if (poll) {
-          setActivePoll(poll);
-          // Check if user has already voted in this poll
-          const user = getCurrentUser();
-          if (user) {
-            const userVotes = await getUserVotes(user.uid);
-            const hasVotedInPoll = userVotes.some((v: any) => v.pollId === poll.id);
-            setUserHasVoted(hasVotedInPoll);
-          }
-        }
-      } catch (err) {
-        console.error('Error loading active poll:', err);
+    const loadPoll = async () => {
+      const poll = await getActivePoll();
+      if (!poll) return;
+
+      setActivePoll(poll);
+      const user = getCurrentUser();
+      if (user) {
+        const votes = await getUserVotes(user.uid);
+        setUserHasVoted(votes.some((v: any) => v.pollId === poll.id));
       }
     };
 
-    loadActivePoll();
+    loadPoll();
   }, []);
 
+  /* ---------------- LOAD CANDIDATES ---------------- */
   useEffect(() => {
-    const loadCandidates = async () => {
-      try {
-        const cands = await getCandidates();
-        setCandidates(cands);
-      } catch (err) {
-        setError('Failed to load candidates. Please make sure you are connected to the correct network.');
-        console.error(err);
-      }
-    };
-    if (walletConnected) {
-      loadCandidates();
-    }
+    if (!walletConnected) return;
+    getCandidates().then(setCandidates).catch(() => {
+      setError("Unable to load candidates");
+    });
   }, [walletConnected, setCandidates]);
 
+  /* ---------------- WALLET ---------------- */
   const handleConnectWallet = async () => {
     setLoading(true);
-    setError(null);
     try {
       await connectWallet();
-      const provider = new (window as any).ethers.BrowserProvider((window as any).ethereum);
+      const provider = new (window as any).ethers.BrowserProvider(
+        (window as any).ethereum
+      );
       const signer = await provider.getSigner();
       const address = await signer.getAddress();
-      setUserAddress(address);
 
-      const voted = await hasVoted(address);
-      setHasVoted(voted);
+      setUserAddress(address);
       setWalletConnected(true);
-    } catch (err: any) {
-      setError(err.message || 'Failed to connect wallet');
-      console.error(err);
+      setHasVoted(await hasVoted(address));
+    } catch (e: any) {
+      setError(e.message || "Wallet connection failed");
     } finally {
       setLoading(false);
     }
   };
 
+  /* ---------------- VOTE ---------------- */
   const handleVote = async () => {
-    if (selectedCandidate !== null && !userHasVoted && activePoll) {
-      setLoading(true);
-      setError(null);
-      try {
-        // Record vote on blockchain
-        await vote(selectedCandidate);
+    if (selectedCandidate === null || !activePoll) return;
 
-        // Record vote in Firestore
-        const user = getCurrentUser();
-        if (user) {
-          await recordVote(activePoll.id, user.uid, selectedCandidate, userAddress);
-        }
+    setLoading(true);
+    try {
+      await vote(selectedCandidate);
 
-        setHasVoted(true);
-        setUserHasVoted(true);
-
-        // Reload candidates to update vote counts
-        const cands = await getCandidates();
-        setCandidates(cands);
-        setSelectedCandidate(null);
-      } catch (err: any) {
-        setError(err.message || 'Failed to submit vote');
-        console.error(err);
-      } finally {
-        setLoading(false);
+      const user = getCurrentUser();
+      if (user) {
+        await recordVote(
+          activePoll.id,
+          user.uid,
+          selectedCandidate,
+          userAddress
+        );
       }
+
+      setUserHasVoted(true);
+    } catch (e: any) {
+      setError(e.message || "Vote submission failed");
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (!activePoll) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading active poll...</p>
-        </div>
-      </div>
-    );
-  }
+  /* ---------------- CONFIDENCE ---------------- */
+  const maxVotes = Math.max(
+    ...candidates.map((c: any) => c.votes || 1),
+    1
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Poll Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <MotionH2
-            className="text-3xl font-bold text-gray-900 mb-2"
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease: "easeOut" }}
-          >
-            {activePoll.title}
-          </MotionH2>
-          <p className="text-gray-600 mb-4">{activePoll.description}</p>
-          <div className="flex items-center gap-4 text-sm text-gray-500">
-            <span className="flex items-center gap-1">
-              <Users className="w-4 h-4" />
-              {activePoll.candidates.length} candidates
-            </span>
-            <span className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              Ends: {activePoll.endDate.toDate().toLocaleDateString()}
-            </span>
+    <div className="
+      min-h-screen
+      bg-neutral-950 text-neutral-100
+      light:bg-neutral-50 light:text-neutral-900
+      transition-colors duration-300
+    ">
+      {/* ---------------- NAVBAR ---------------- */}
+      <nav className="
+        border-b border-neutral-800
+        light:border-neutral-200
+        bg-neutral-950/90 light:bg-neutral-50/90
+        backdrop-blur
+      ">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="text-sm font-semibold uppercase tracking-wide">
+            Vote<span className="text-blue-500">Chain</span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Link
+              to="/"
+              className="text-sm text-neutral-400 light:text-neutral-600 hover:text-neutral-200 light:hover:text-neutral-900"
+            >
+              Home
+            </Link>
+            <ThemeToggle />
           </div>
         </div>
+      </nav>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-600">{error}</p>
-          </div>
-        )}
+      {/* ---------------- MAIN GRID ---------------- */}
+      <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-3 gap-10">
 
-        {!walletConnected ? (
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-            <div className="mb-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Connect Your Wallet</h3>
-              <p className="text-gray-600">Connect your MetaMask wallet to participate in secure blockchain voting</p>
+        {/* ---------------- LEFT : DAO CONTEXT ---------------- */}
+        <MotionDiv
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="
+            lg:col-span-1 rounded-2xl p-6
+            bg-neutral-900 light:bg-white
+            border border-neutral-800 light:border-neutral-200
+          "
+        >
+          <h2 className="text-xl font-semibold mb-2">
+            {activePoll?.title || "DAO Governance Proposal"}
+          </h2>
+
+          <p className="text-sm text-neutral-400 light:text-neutral-600 mb-6 leading-relaxed">
+            {activePoll?.description ||
+              "This proposal is governed via decentralized consensus."}
+          </p>
+
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between text-neutral-400 light:text-neutral-600">
+              <span>Status</span>
+              <span className="text-green-500">Active</span>
             </div>
-            <MotionButton
-              onClick={handleConnectWallet}
-              disabled={loading}
-              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Connecting...
-                </>
-              ) : (
-                'Connect Wallet'
-              )}
-            </MotionButton>
-          </div>
-        ) : (
-          <>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-              <div className="flex items-center">
-                <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-green-800 font-medium">Wallet Connected</span>
-                <span className="text-green-600 ml-2 text-sm">
-                  {userAddress.slice(0, 6)}...{userAddress.slice(-4)}
-                </span>
-              </div>
+            <div className="flex justify-between text-neutral-400 light:text-neutral-600">
+              <span>Candidates</span>
+              <span>{activePoll?.candidates.length ?? 0}</span>
             </div>
+            <div className="flex justify-between text-neutral-400 light:text-neutral-600">
+              <span>Ends</span>
+              <span>{activePoll?.endDate.toDate().toLocaleDateString()}</span>
+            </div>
+          </div>
 
-            {userHasVoted ? (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Vote Submitted Successfully!</h3>
-                <p className="text-gray-600 mb-4">Your vote has been recorded on the blockchain and is immutable.</p>
-                <div className="bg-white rounded-lg p-4 inline-block">
-                  <p className="text-sm text-gray-500">Transaction secured by Ethereum blockchain</p>
-                </div>
-              </div>
+          <div className="mt-8 pt-6 border-t border-neutral-800 light:border-neutral-200 text-xs text-neutral-500">
+            Votes are cryptographically signed and immutable.
+          </div>
+        </MotionDiv>
+
+        {/* ---------------- RIGHT : DAO ACTION ---------------- */}
+        <MotionDiv
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="
+            lg:col-span-2 rounded-2xl p-8
+            bg-neutral-900 light:bg-white
+            border border-neutral-800 light:border-neutral-200
+          "
+        >
+          {/* Wallet */}
+          <div className="flex justify-between items-center mb-6">
+            <span className="text-sm text-neutral-400 light:text-neutral-600">
+              {walletConnected ? "Wallet Connected" : "Wallet Disconnected"}
+            </span>
+
+            {walletConnected ? (
+              <span className="font-mono text-xs text-neutral-500">
+                {userAddress.slice(0, 6)}…{userAddress.slice(-4)}
+              </span>
             ) : (
-              <>
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Select Your Candidate</h3>
-                  <p className="text-gray-600 mb-6">Choose the candidate you want to vote for. Your vote will be recorded on the blockchain.</p>
-                </div>
+              <MotionButton
+                onClick={handleConnectWallet}
+                className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm"
+              >
+                Connect Wallet
+              </MotionButton>
+            )}
+          </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  {activePoll.candidates.map((candidateName, index) => (
+          {/* VOTED */}
+          {userHasVoted && (
+            <div className="
+              p-6 rounded-xl text-center
+              border border-green-600/30
+              bg-green-600/10 text-green-500
+            ">
+              Your vote has been recorded on-chain.
+            </div>
+          )}
+
+          {/* VOTING */}
+          {!userHasVoted && (
+            <>
+              <h3 className="text-lg font-semibold mb-4">
+                Cast Your Governance Vote
+              </h3>
+
+              <div className="space-y-3">
+                {activePoll?.candidates.map((name, index) => {
+                  const votes = (candidates[index] as any)?.votes || 0;
+                  const confidence = Math.round((votes / maxVotes) * 100);
+
+                  return (
                     <MotionDiv
                       key={index}
-                      className={`p-6 bg-white rounded-lg shadow-sm border-2 transition-all cursor-pointer ${
-                        selectedCandidate === index
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.5 }}
+                      whileHover={{ scale: 1.01 }}
                       onClick={() => setSelectedCandidate(index)}
+                      className={`
+                        p-4 rounded-xl cursor-pointer border transition
+                        ${
+                          selectedCandidate === index
+                            ? "border-blue-500 bg-blue-500/10"
+                            : "border-neutral-800 light:border-neutral-200 hover:border-neutral-600"
+                        }
+                      `}
                     >
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-lg font-semibold text-gray-900">{candidateName}</h4>
-                        {selectedCandidate === index && (
-                          <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          </div>
-                        )}
+                      <div className="flex justify-between mb-2">
+                        <span className="font-medium">{name}</span>
+                        <span className="text-xs text-neutral-400 light:text-neutral-600">
+                          Confidence: {confidence}%
+                        </span>
                       </div>
-                      <div className="text-sm text-gray-500">
-                        Candidate #{index + 1}
+
+                      <div className="h-1.5 bg-neutral-800 light:bg-neutral-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 transition-all"
+                          style={{ width: `${confidence}%` }}
+                        />
                       </div>
                     </MotionDiv>
-                  ))}
-                </div>
+                  );
+                })}
+              </div>
 
-                {selectedCandidate !== null && (
-                  <div className="bg-white rounded-lg shadow-sm p-6">
-                    <div className="text-center">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-2">Confirm Your Vote</h4>
-                      <p className="text-gray-600 mb-4">
-                        You have selected: <span className="font-medium text-blue-600">{activePoll.candidates[selectedCandidate]}</span>
-                      </p>
-                      <p className="text-sm text-gray-500 mb-6">
-                        This action cannot be undone. Your vote will be permanently recorded on the blockchain.
-                      </p>
-                      <MotionButton
-                        onClick={handleVote}
-                        disabled={loading}
-                        className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        {loading ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Submitting Vote...
-                          </>
-                        ) : (
-                          'Submit Vote'
-                        )}
-                      </MotionButton>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </>
-        )}
+              {/* SUBMIT */}
+              <div className="mt-8 flex justify-between items-center border-t border-neutral-800 light:border-neutral-200 pt-6">
+                <p className="text-xs text-neutral-500 max-w-sm">
+                  Submitting your vote is irreversible and final.
+                </p>
+
+                <MotionButton
+                  onClick={handleVote}
+                  disabled={selectedCandidate === null || loading}
+                  className="
+                    px-6 py-3 rounded-lg
+                    bg-blue-600 text-white text-sm
+                    disabled:opacity-40
+                  "
+                >
+                  Submit Vote
+                </MotionButton>
+              </div>
+            </>
+          )}
+
+          {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
+        </MotionDiv>
       </div>
     </div>
   );

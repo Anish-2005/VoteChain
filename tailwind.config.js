@@ -1,13 +1,6 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
+const plugin = require('tailwindcss/plugin');
+
 module.exports = {
   darkMode: 'class', // Enable dark mode by adding a 'dark' class
   content: [
@@ -16,6 +9,11 @@ module.exports = {
   theme: {
     extend: {},
   },
-  plugins: [],
+  plugins: [
+    // Add a `light:` variant that applies when an ancestor has the `light` class
+    plugin(function ({ addVariant }) {
+      addVariant('light', '.light &');
+    }),
+  ],
 };
 

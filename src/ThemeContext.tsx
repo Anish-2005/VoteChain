@@ -19,7 +19,9 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     localStorage.setItem('theme', theme);
-    document.body.className = theme; // Apply the theme class to the body
+    // apply theme class safely without clobbering other classes
+    document.body.classList.remove('light', 'dark');
+    document.body.classList.add(theme);
   }, [theme]);
 
   const toggleTheme = () => {
