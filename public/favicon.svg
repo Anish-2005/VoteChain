@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512" role="img" aria-label="VoteChain">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="10" fill="url(#g)" />
+  <!-- ballot box -->
+  <rect x="12" y="18" width="40" height="22" rx="3" fill="#fff" opacity="0.95"/>
+  <rect x="18" y="22" width="28" height="3" rx="1" fill="#e5e7eb"/>
+  <rect x="20" y="28" width="24" height="2" rx="1" fill="#f3f4f6"/>
+  <!-- ballot -->
+  <rect x="24" y="12" width="16" height="8" rx="1.5" fill="#fff" transform="rotate(0 32 16)"/>
+  <path d="M28 15l3 3 6-6" stroke="#065f46" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- chain link accent -->
+  <g transform="translate(40,36) rotate(40)">
+    <circle cx="0" cy="0" r="3" fill="#fff" opacity="0.9"/>
+    <rect x="3" y="-1" width="10" height="2" rx="1" fill="#fff" opacity="0.9"/>
+    <circle cx="14" cy="0" r="3" fill="#fff" opacity="0.9"/>
+  </g>
+</svg>
