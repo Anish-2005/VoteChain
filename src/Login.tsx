@@ -16,6 +16,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const unsubscribe = onAuthChange(async (user) => {
       if (user) {
         try {
+          // If we stored a selected role before redirect, persist it now
+          const stored = localStorage.getItem('selectedRole');
+          if (stored) {
+            const role = stored === 'admin' ? 'admin' : 'user';
+            await setUserRole(user.uid, role);
+            localStorage.removeItem('selectedRole');
+            onLogin(user, role);
+            return;
+          }
+
           const role = await getUserRole(user.uid);
           onLogin(user, role);
         } catch (err) {
@@ -33,13 +43,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError(null);
 
     try {
-      const result = await loginWithGoogle();
-      const user = result.user;
-
-      // Set the selected role for the user
-      await setUserRole(user.uid, selectedRole);
-
-      onLogin(user, selectedRole);
+      // Persist selected role across redirect sign-in and start redirect
+      localStorage.setItem('selectedRole', selectedRole);
+      await loginWithGoogle();
+      // signInWithRedirect does not return a user immediately; flow continues after redirect
+      return;
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'Login failed');

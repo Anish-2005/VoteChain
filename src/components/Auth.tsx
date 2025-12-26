@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { loginWithGoogle, logout, onAuthChange, getCurrentUser } from '../firebase';
+import { logout, onAuthChange, getCurrentUser } from '../firebase';
+import { Link } from 'react-router-dom';
 
 const Auth: React.FC = () => {
   const [user, setUser] = useState<any | null>(null);
@@ -11,24 +12,26 @@ const Auth: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-3">
       {user ? (
         <>
-          <div className="text-sm text-gray-700">{user.displayName}</div>
+          <div className="text-sm font-medium text-neutral-100 light:text-neutral-900">
+            {user.displayName}
+          </div>
           <button
             onClick={() => logout()}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+            className="px-3 py-1 rounded-md border border-neutral-700 bg-neutral-800 text-neutral-100 hover:bg-neutral-700 transition-colors duration-150 light:border-neutral-300 light:bg-white light:text-neutral-900 light:hover:bg-neutral-100"
           >
             Sign out
           </button>
         </>
       ) : (
-        <button
-          onClick={() => loginWithGoogle()}
-          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+        <Link
+          to="/login"
+          className="px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-150 text-sm"
         >
-          Sign in with Google
-        </button>
+          Sign in
+        </Link>
       )}
     </div>
   );

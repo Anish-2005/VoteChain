@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import ThemeToggle from "./components/ThemeToggle";
+import Auth from "./components/Auth";
 import Blockchain3DScene from "./components/Blockchain3DScene";
 import ParticleField from "./components/ParticleField";
 
@@ -76,11 +77,13 @@ const Home = () => {
               Stats
             </a>
             <ThemeToggle />
+            <Auth />
           </div>
 
           {/* Mobile */}
           <div className="md:hidden flex items-center gap-3">
             <ThemeToggle />
+            <Auth />
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="p-2 rounded-md border border-neutral-800 light:border-neutral-200"

@@ -2,10 +2,12 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import ThemeToggle from "./components/ThemeToggle";
+import Auth from "./components/Auth";
 
 import { useVotingStore } from "./store/useVotingStore";
 import { ethers } from 'ethers';
-import { connectWallet, getCandidates, vote, hasVoted } from "./utils/blockchain";
+import { connectWallet, getCandidates, vote, hasVoted, addLocalNetwork } from "./utils/blockchain";
+import { Timestamp } from 'firebase/firestore';
 import {
   getActivePoll,
   recordVote,
@@ -53,6 +55,32 @@ const VotingInterface = () => {
     });
   }, [walletConnected, setCandidates]);
 
+  /* ---------------- SYNTHETIC ACTIVE POLL (local dev) ---------------- */
+  useEffect(() => {
+    if (activePoll) return;
+    if (!walletConnected) return;
+    if (!candidates || candidates.length === 0) return;
+
+    try {
+      const poll: Poll = {
+        id: 'local-sample',
+        title: 'Local Sample Poll (on-chain)',
+        description: 'Sample poll generated from on-chain candidates for local testing.',
+        candidates: candidates.map((c: any) => c.name || `Candidate ${c.id}`),
+        startDate: Timestamp.fromDate(new Date()),
+        endDate: Timestamp.fromDate(new Date(Date.now() + 1000 * 60 * 60 * 24)),
+        status: 'active',
+        createdAt: Timestamp.fromDate(new Date()),
+        updatedAt: Timestamp.fromDate(new Date()),
+        createdBy: 'local'
+      } as Poll;
+
+      setActivePoll(poll);
+    } catch (e) {
+      console.warn('Could not synthesize local poll', e);
+    }
+  }, [walletConnected, candidates, activePoll]);
+
   /* ---------------- WALLET ---------------- */
   const handleConnectWallet = async () => {
     setLoading(true);
@@ -72,27 +100,83 @@ const VotingInterface = () => {
     }
   };
 
+  const handleAddLocalNetwork = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await addLocalNetwork();
+      // after adding, try to switch/connect
+      await connectWallet();
+      const provider = new ethers.BrowserProvider((window as any).ethereum);
+      const signer = await provider.getSigner();
+      const address = await signer.getAddress();
+      setUserAddress(address);
+      setWalletConnected(true);
+      setHasVoted(await hasVoted(address));
+    } catch (e: any) {
+      setError(e.message || 'Failed to add/switch network');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Debug: log relevant state when it changes to help diagnose disabled button
+  useEffect(() => {
+    try {
+      console.log('VotingInterface state: ' + JSON.stringify({
+        walletConnected,
+        userAddress,
+        userHasVoted,
+        selectedCandidate,
+        loading,
+        error,
+        activePollExists: !!activePoll,
+        activePollCandidates: activePoll?.candidates?.length ?? 0,
+      }, null, 2));
+    } catch (e) {
+      console.log('VotingInterface state (could not stringify)', {
+        walletConnected,
+        userAddress,
+        userHasVoted,
+        selectedCandidate,
+        loading,
+        error,
+        activePollExists: !!activePoll,
+      });
+    }
+  }, [walletConnected, userAddress, userHasVoted, selectedCandidate, loading, error, activePoll]);
+
   /* ---------------- VOTE ---------------- */
   const handleVote = async () => {
     if (selectedCandidate === null || !activePoll) return;
 
     setLoading(true);
     try {
-      await vote(selectedCandidate);
+      // Contract uses 1-based candidate ids; prefer on-chain id if available
+      const onChainId = (candidates[selectedCandidate] as any)?.id ?? (selectedCandidate + 1);
+      await vote(onChainId);
 
       const user = getCurrentUser();
       if (user) {
         await recordVote(
           activePoll.id,
           user.uid,
-          selectedCandidate,
+          onChainId,
           userAddress
         );
       }
 
       setUserHasVoted(true);
     } catch (e: any) {
-      setError(e.message || "Vote submission failed");
+      // MetaMask/ethers user rejection produces error code 4001
+      if (
+        e &&
+        (e.code === 4001 || e?.error?.code === 4001 || (e?.data && e.data?.code === 4001))
+      ) {
+        setError('Transaction rejected by user. You can retry.');
+      } else {
+        setError(e?.message || 'Vote submission failed');
+      }
     } finally {
       setLoading(false);
     }
@@ -100,7 +184,7 @@ const VotingInterface = () => {
 
   /* ---------------- CONFIDENCE ---------------- */
   const maxVotes = Math.max(
-    ...candidates.map((c: any) => c.votes || 1),
+    ...candidates.map((c: any) => c.voteCount || 1),
     1
   );
 
@@ -131,6 +215,7 @@ const VotingInterface = () => {
               Home
             </Link>
             <ThemeToggle />
+            <Auth />
           </div>
         </div>
       </nav>
@@ -166,10 +251,10 @@ const VotingInterface = () => {
               <span>Candidates</span>
               <span>{activePoll?.candidates.length ?? 0}</span>
             </div>
-            <div className="flex justify-between text-neutral-400 light:text-neutral-600">
-              <span>Ends</span>
-              <span>{activePoll?.endDate.toDate().toLocaleDateString()}</span>
-            </div>
+                <div className="flex justify-between text-neutral-400 light:text-neutral-600">
+                  <span>Ends</span>
+                  <span>{activePoll?.endDate ? activePoll.endDate.toDate().toLocaleDateString() : '—'}</span>
+                </div>
           </div>
 
           <div className="mt-8 pt-6 border-t border-neutral-800 light:border-neutral-200 text-xs text-neutral-500">
@@ -199,12 +284,20 @@ const VotingInterface = () => {
                 {userAddress.slice(0, 6)}…{userAddress.slice(-4)}
               </span>
             ) : (
-              <MotionButton
-                onClick={handleConnectWallet}
-                className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm"
-              >
-                Connect Wallet
-              </MotionButton>
+              <div className="flex items-center gap-3">
+                <MotionButton
+                  onClick={handleConnectWallet}
+                  className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm"
+                >
+                  Connect Wallet
+                </MotionButton>
+                <MotionButton
+                  onClick={handleAddLocalNetwork}
+                  className="px-3 py-2 rounded-md bg-transparent text-sm border border-neutral-                  npm run node700 light:border-neutral-200"
+                >
+                  Add/Switch Local Network
+                </MotionButton>
+              </div>
             )}
           </div>
 
@@ -228,7 +321,7 @@ const VotingInterface = () => {
 
               <div className="space-y-3">
                 {activePoll?.candidates.map((name, index) => {
-                  const votes = (candidates[index] as any)?.votes || 0;
+                  const votes = (candidates[index] as any)?.voteCount || 0;
                   const confidence = Math.round((votes / maxVotes) * 100);
 
                   return (

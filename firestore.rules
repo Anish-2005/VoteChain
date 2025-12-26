@@ -1,19 +1,23 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read/write access to polls for authenticated users
+    // Polls: allow reads for authenticated users; only admin can write
     match /polls/{pollId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null && request.auth.token.email == 'anishseth0510@gmail.com';
     }
 
-    // Allow read/write access to votes for authenticated users
+    // Votes: authenticated users can read/write votes
     match /votes/{voteId} {
-      allow read, write: if request.auth != null;
+      allow read, create: if request.auth != null;
+      // prevent arbitrary overwrite/deletes of votes
+      allow update, delete: if false;
     }
 
-    // Allow read/write access to users collection for authenticated users
+    // Users: allow users to read/write their own user document; admin may write any
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && (request.auth.uid == userId || request.auth.token.email == 'anishseth0510@gmail.com');
+      allow write: if request.auth != null && (request.auth.uid == userId || request.auth.token.email == 'anishseth0510@gmail.com');
     }
   }
 }

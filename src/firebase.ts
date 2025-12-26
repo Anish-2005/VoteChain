@@ -1,7 +1,7 @@
 // Firebase setup - reads config from REACT_APP_* environment variables
 import { initializeApp } from 'firebase/app';
 import { getAnalytics } from 'firebase/analytics';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, query, where, orderBy, Timestamp } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -30,6 +30,21 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const db = getFirestore(app);
 
+// Admin email (can be overridden via env)
+export const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL || 'anishseth0510@gmail.com';
+
+export const ensureAdminByEmail = async (user: User) => {
+  try {
+    if (user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+      await setUserRole(user.uid, 'admin');
+      return 'admin';
+    }
+  } catch (e) {
+    console.warn('ensureAdminByEmail failed', e);
+  }
+  return null;
+};
+
 // Define types for Firestore data
 export interface PollData {
   title: string;
@@ -47,8 +62,9 @@ export interface Poll extends PollData {
   id: string;
 }
 
+// Use redirect-based sign-in to avoid popup issues with COOP/COEP policies
 export const loginWithGoogle = async () => {
-  return signInWithPopup(auth, provider);
+  return signInWithRedirect(auth, provider);
 };
 
 export const logout = async () => {
