@@ -58,7 +58,8 @@ export default function AdminPanel() {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null);
   const [pollVotes, setPollVotes] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'proposals' | 'analytics'>('proposals');
+  const [activeTab, setActiveTab] = useState<'proposals' | 'analytics' | 'stats'>('proposals');
+  const [statsData, setStatsData] = useState<any | null>(null);
 
   // Mock data for empty states (local/dev)
   const MOCK_POLLS: Poll[] = [
@@ -172,6 +173,31 @@ export default function AdminPanel() {
     }
 
     setPollVotes(counts);
+  };
+
+  const loadStats = async () => {
+    const list = polls.length === 0 ? MOCK_POLLS : polls;
+    // aggregate candidate totals across polls
+    const candidateTotals: Record<string, number> = {};
+    let totalVotes = 0;
+
+    for (const poll of list) {
+      const votes = await getPollVotes(poll.id);
+      votes.forEach((v: any) => {
+        const cid = Number(v.candidateId);
+        const idx = cid > 0 ? cid - 1 : cid;
+        const name = poll.candidates[idx] ?? `Option ${idx + 1}`;
+        candidateTotals[name] = (candidateTotals[name] || 0) + 1;
+        totalVotes++;
+      });
+    }
+
+    const candidateList = Object.keys(candidateTotals).map((name) => ({ name, votes: candidateTotals[name] }));
+    candidateList.sort((a, b) => b.votes - a.votes);
+
+    const recent = (list || []).slice(0, 6).map((p) => ({ id: p.id, title: p.title, candidateCount: p.candidates.length }));
+
+    setStatsData({ totalVotes, candidateList, recent });
   };
 
   if (loading) {
@@ -295,9 +321,10 @@ export default function AdminPanel() {
                 <p className="text-sm text-neutral-400">Manage proposals and review analytics.</p>
               </div>
 
-              <div className="mt-3 sm:mt-0 flex items-center gap-2">
+                <div className="mt-3 sm:mt-0 flex items-center gap-2">
                 <button onClick={() => setActiveTab('proposals')} className={`px-3 py-2 rounded-md text-sm ${activeTab==='proposals' ? 'bg-neutral-800 text-white' : 'text-neutral-400'}`}>Proposals</button>
                 <button onClick={() => setActiveTab('analytics')} className={`px-3 py-2 rounded-md text-sm ${activeTab==='analytics' ? 'bg-neutral-800 text-white' : 'text-neutral-400'}`}>Analytics</button>
+                <button onClick={() => { setActiveTab('stats'); loadStats(); }} className={`px-3 py-2 rounded-md text-sm ${activeTab==='stats' ? 'bg-neutral-800 text-white' : 'text-neutral-400'}`}>Stats</button>
               </div>
             </div>
 
@@ -309,7 +336,17 @@ export default function AdminPanel() {
                 + New Proposal
               </button>
               <button
-                onClick={() => navigate('/results', { state: { pollId: selectedPoll?.id } })}
+                onClick={() => {
+                  // choose poll id: selected -> first real -> first mock
+                  const list = polls.length === 0 ? MOCK_POLLS : polls;
+                  const fallbackId = list && list.length > 0 ? list[0].id : undefined;
+                  const id = selectedPoll?.id ?? fallbackId;
+                  if (id) {
+                    navigate(`/results?pollId=${encodeURIComponent(id)}`, { state: { pollId: id } });
+                  } else {
+                    navigate('/results');
+                  }
+                }}
                 className="text-sm text-neutral-400"
               >
                 View Results
@@ -434,6 +471,58 @@ export default function AdminPanel() {
                       })}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'stats' && (
+            <div className="p-6 rounded-2xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+              <h3 className="font-semibold mb-4">Aggregated Results</h3>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+                <div className="p-4 rounded-xl border border-neutral-800 light:border-neutral-200 bg-neutral-950 light:bg-white">
+                  <div className="text-xs text-neutral-400">Total Votes (all polls)</div>
+                  <div className="text-2xl font-semibold">{statsData?.totalVotes ?? 0}</div>
+                </div>
+                <div className="p-4 rounded-xl border border-neutral-800 light:border-neutral-200 bg-neutral-950 light:bg-white">
+                  <div className="text-xs text-neutral-400">Distinct Candidates</div>
+                  <div className="text-2xl font-semibold">{statsData?.candidateList?.length ?? 0}</div>
+                </div>
+                <div className="p-4 rounded-xl border border-neutral-800 light:border-neutral-200 bg-neutral-950 light:bg-white">
+                  <div className="text-xs text-neutral-400">Recent Proposals</div>
+                  <div className="text-2xl font-semibold">{statsData?.recent?.length ?? 0}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="p-4 rounded-xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+                  <div className="text-sm text-neutral-400 mb-3">Top Candidates</div>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={statsData?.candidateList || []} layout="vertical">
+                      <XAxis type="number" />
+                      <YAxis type="category" dataKey="name" />
+                      <Tooltip />
+                      <Bar dataKey="votes" fill="#3b82f6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="p-4 rounded-xl border border-neutral-800 light:border-neutral-200 bg-neutral-900 light:bg-white">
+                  <div className="text-sm text-neutral-400 mb-3">Recent Proposals</div>
+                  <ul className="space-y-3">
+                    {(statsData?.recent || []).map((p: any) => (
+                      <li key={p.id} className="flex justify-between items-center">
+                        <div>
+                          <div className="font-medium">{p.title}</div>
+                          <div className="text-xs text-neutral-400">{p.candidateCount} candidates</div>
+                        </div>
+                        <div>
+                          <button onClick={() => { const poll = (polls.length===0?MOCK_POLLS:polls).find(x=>x.id===p.id); if(poll){ loadAnalytics(poll); setActiveTab('analytics'); } }} className="text-sm text-blue-400">Open</button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             </div>
