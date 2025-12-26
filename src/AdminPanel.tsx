@@ -5,7 +5,6 @@ import {
   Bar,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   PieChart,
@@ -159,11 +158,11 @@ export default function AdminPanel() {
     const counts = poll.candidates.map((name, i) => ({ name, votes: 0 }));
 
     if (votes && votes.length > 0) {
-      votes.forEach((v: any) => {
-        const cid = Number(v.candidateId);
+      for (const v of votes) {
+        const cid = Number((v as any).candidateId);
         const idx = cid > 0 ? cid - 1 : cid;
         if (typeof idx === 'number' && counts[idx]) counts[idx].votes++;
-      });
+      }
     }
 
     const hasAny = counts.some((c) => c.votes > 0);
@@ -183,13 +182,13 @@ export default function AdminPanel() {
 
     for (const poll of list) {
       const votes = await getPollVotes(poll.id);
-      votes.forEach((v: any) => {
-        const cid = Number(v.candidateId);
+      for (const v of votes) {
+        const cid = Number((v as any).candidateId);
         const idx = cid > 0 ? cid - 1 : cid;
         const name = poll.candidates[idx] ?? `Option ${idx + 1}`;
         candidateTotals[name] = (candidateTotals[name] || 0) + 1;
         totalVotes++;
-      });
+      }
     }
 
     const candidateList = Object.keys(candidateTotals).map((name) => ({ name, votes: candidateTotals[name] }));
