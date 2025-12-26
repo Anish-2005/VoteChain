@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { getCurrentUser } from '../firebase';
 
 interface Props {
-  children: JSX.Element;
+  children: React.ReactNode;
 }
 
 const ProtectedRoute: React.FC<Props> = ({ children }) => {
