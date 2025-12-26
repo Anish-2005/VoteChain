@@ -3,11 +3,11 @@ import { motion } from "framer-motion";
 import {
   Shield,
   Users,
-  BarChart3,
+  
   Lock,
   Zap,
   Globe,
-  CheckCircle,
+  
   ArrowRight,
   Star,
   TrendingUp,
@@ -24,7 +24,7 @@ import ParticleField from "./components/ParticleField";
 
 const MotionDiv = motion.div;
 const MotionSection = motion.section;
-const MotionButton = motion.button;
+
 const MotionH1 = motion.h1;
 const MotionP = motion.p;
 

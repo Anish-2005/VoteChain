@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { ThemeProvider } from './ThemeContext';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
-import { onAuthChange, getUserRole, setUserRole, ADMIN_EMAIL, ensureAdminByEmail } from './firebase';
+import { onAuthChange, getUserRole, setUserRole } from './firebase';
 import Home from './Home';
 import VotingInterface from './VotingInterface';
 import ProtectedRoute from './components/ProtectedRoute';

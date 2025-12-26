@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useVotingStore } from "./store/useVotingStore";
-import { getCandidates, connectWallet } from "./utils/blockchain";
+import { getCandidates } from "./utils/blockchain";
 import { getPolls, getPollVotes, Poll } from "./firebase";
 import { BarChart3, Users, Calendar } from "lucide-react";
 import { Link, useLocation } from 'react-router-dom';
@@ -98,9 +98,6 @@ const Results = () => {
         }
 
         setPollResults(results);
-        // If a pollId was provided via navigation state or query, try to focus it
-        const loc = (window as any).__initialLocation || null;
-        // we will check location from react-router
       } catch (err: any) {
         const msg = err?.message || String(err) || 'Unknown error.';
         setError(`Failed to load results. ${msg}`);
